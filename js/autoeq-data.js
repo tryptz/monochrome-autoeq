@@ -3572,7 +3572,7 @@ function parseRawData(raw) {
     for (const line of lines) {
         const cleanLine = line.trim();
         if (!cleanLine) continue;
-        if (!/^[\d\-\.]/.test(cleanLine)) continue;
+        if (!/^[\d\-.]/u.test(cleanLine)) continue;
 
         const parts = typeof delimiter === 'string' ? cleanLine.split(delimiter) : cleanLine.split(delimiter);
         if (parts.length <= Math.max(freqIdx, gainIdx)) continue;

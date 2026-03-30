@@ -36,7 +36,7 @@ import {
     modalSettings,
     preferDolbyAtmosSettings,
 } from './storage.js';
-import { audioContextManager, EQ_PRESETS, getPresetsForBandCount } from './audio-context.js';
+import { audioContextManager, getPresetsForBandCount } from './audio-context.js';
 import { calculateBiquadResponse, interpolate, getNormalizationOffset, runAutoEqAlgorithm } from './autoeq-engine.js';
 import { parseRawData, TARGETS, SPEAKER_TARGETS } from './autoeq-data.js';
 import { fetchAutoEqIndex, fetchHeadphoneData, searchHeadphones } from './autoeq-importer.js';
@@ -1233,12 +1233,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const eqToggle = document.getElementById('equalizer-enabled-toggle');
     const eqContainer = document.getElementById('equalizer-container');
     const eqPreampSlider = document.getElementById('eq-preamp-slider');
-    const eqImportFile = document.getElementById('eq-import-file');
 
     // AutoEQ State (kept when switching modes)
     let autoeqSelectedMeasurement = null;
     let autoeqSelectedEntry = null;
-    let autoeqSearchTimer = null;
     let autoeqCurrentBands = null;   // AutoEQ-generated bands
     let autoeqCorrectedCurve = null;
     let currentPreamp = equalizerSettings.getPreamp();
@@ -1271,7 +1269,6 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     // DOM Elements
     const autoeqCanvas = document.getElementById('autoeq-response-canvas');
     const autoeqGraphWrapper = document.getElementById('autoeq-graph-wrapper');
-    const autoeqSearchInput = document.getElementById('autoeq-headphone-search');
     const autoeqHeadphoneSelect = document.getElementById('autoeq-headphone-select');
     const autoeqTargetSelect = document.getElementById('autoeq-target-select');
     const autoeqBandCount = document.getElementById('autoeq-band-count');
@@ -1343,7 +1340,6 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         const dbHalfRange = isParametricMode ? graphDbHalfParametric : graphDbHalfAutoEQ;
         const dbMin = dbCenter - dbHalfRange;
         const dbMax = dbCenter + dbHalfRange;
-        const dbRange = dbMax - dbMin;
 
         // Helper mappings (local to graph area)
         const gx = (freq) => padLeft + freqToX(freq, w);
@@ -2460,7 +2456,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             try {
                 _autoeqIndex = await fetchAutoEqIndex();
                 setAutoEQStatus(`Loaded ${_autoeqIndex.length} headphones`, 'success');
-            } catch (err) {
+            } catch {
                 setAutoEQStatus('Failed to load database', 'error');
                 return;
             }
@@ -2573,7 +2569,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     if (autoeqRunBtn) autoeqRunBtn.disabled = false;
                     drawAutoEQGraph();
                     setAutoEQStatus(`Imported ${data.length} points from ${file.name}`, 'success');
-                } catch (err) {
+                } catch {
                     setAutoEQStatus('Failed to parse file', 'error');
                 }
             };
@@ -2630,7 +2626,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     computeCorrectedCurve();
                     drawAutoEQGraph();
                     setAutoEQStatus(`Target "${customLabel}" imported`, 'success');
-                } catch (err) {
+                } catch {
                     setAutoEQStatus('Failed to parse target file', 'error');
                 }
             };
