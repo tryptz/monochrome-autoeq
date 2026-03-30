@@ -3885,8 +3885,27 @@
                                                 <input type="checkbox" id="autoeq-auto-preamp-toggle" checked />
                                                 <span class="slider"></span>
                                             </label>
-                                        </div>
                                     </div>
+
+                                    <!-- AutoEQ Controls -->
+                                    <div class="autoeq-controls-section">
+                                        <div class="autoeq-type-filters">
+                                            <button class="autoeq-type-btn active" data-type="all">ALL</button>
+                                            <button class="autoeq-type-btn" data-type="over-ear">OVER-EAR</button>
+                                            <button class="autoeq-type-btn" data-type="in-ear">IN-EAR</button>
+                                        </div>
+
+                                        <div class="autoeq-control-group">
+                                            <label class="autoeq-control-label">HEADPHONE MODEL</label>
+                                            <div class="autoeq-select-wrapper">
+                                                <select id="autoeq-headphone-select">
+                                                    <option value="">Select a headphone...</option>
+                                                </select>
+                                                <button id="autoeq-import-measurement-btn" class="autoeq-settings-btn" title="Import measurement file">
+                                                    <use svg="!lucide/file-input.svg" size="16" />
+                                                </button>
+                                            </div>
+                                        </div>
 
                                     <!-- AutoEQ Controls -->
                                     <div class="autoeq-controls-section">
@@ -3924,6 +3943,7 @@
                                                     <option value="flat">Flat (Calibration)</option>
                                                 </select>
                                                 <button id="autoeq-target-settings-btn" class="autoeq-settings-btn" title="Target settings" disabled aria-disabled="true">
+                                                <button id="autoeq-target-settings-btn" class="autoeq-settings-btn" title="Target settings">
                                                     <use svg="!lucide/settings-2.svg" size="16" />
                                                 </button>
                                             </div>
@@ -4093,6 +4113,7 @@
                                                     Export
                                                 </button>
                                                 <span style="flex:1"></span>
+                                            <div class="autoeq-filters-actions">
                                                 <button id="autoeq-add-band-btn" class="btn-secondary" title="Add a new EQ band">
                                                     + Add Band
                                                 </button>
