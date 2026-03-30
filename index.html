@@ -3877,7 +3877,35 @@
                                         <div class="autoeq-graph-wrapper" id="autoeq-graph-wrapper">
                                             <canvas id="autoeq-response-canvas" class="autoeq-response-canvas"></canvas>
                                         </div>
+                                        <div class="autoeq-auto-preamp">
+                                            <label class="autoeq-auto-preamp-label" for="autoeq-auto-preamp-toggle">
+                                                Auto Preamp Compensation
+                                            </label>
+                                            <label class="toggle-switch toggle-switch-sm">
+                                                <input type="checkbox" id="autoeq-auto-preamp-toggle" checked />
+                                                <span class="slider"></span>
+                                            </label>
                                     </div>
+
+                                    <!-- AutoEQ Controls -->
+                                    <div class="autoeq-controls-section">
+                                        <div class="autoeq-type-filters">
+                                            <button class="autoeq-type-btn active" data-type="all">ALL</button>
+                                            <button class="autoeq-type-btn" data-type="over-ear">OVER-EAR</button>
+                                            <button class="autoeq-type-btn" data-type="in-ear">IN-EAR</button>
+                                        </div>
+
+                                        <div class="autoeq-control-group">
+                                            <label class="autoeq-control-label">HEADPHONE MODEL</label>
+                                            <div class="autoeq-select-wrapper">
+                                                <select id="autoeq-headphone-select">
+                                                    <option value="">Select a headphone...</option>
+                                                </select>
+                                                <button id="autoeq-import-measurement-btn" class="autoeq-settings-btn" title="Import measurement file">
+                                                    <use svg="!lucide/file-input.svg" size="16" />
+                                                </button>
+                                            </div>
+                                        </div>
 
                                     <!-- AutoEQ Controls -->
                                     <div class="autoeq-controls-section">
@@ -3914,6 +3942,7 @@
                                                     <option value="peqdb_ultra">PEQdB Ultra</option>
                                                     <option value="flat">Flat (Calibration)</option>
                                                 </select>
+                                                <button id="autoeq-target-settings-btn" class="autoeq-settings-btn" title="Target settings" disabled aria-disabled="true">
                                                 <button id="autoeq-target-settings-btn" class="autoeq-settings-btn" title="Target settings">
                                                     <use svg="!lucide/settings-2.svg" size="16" />
                                                 </button>
@@ -4026,6 +4055,64 @@
                                             </button>
                                         </div>
                                         <div class="autoeq-filters-content" id="autoeq-filters-content">
+                                            <!-- Preset Selector (visible in parametric mode) -->
+                                            <div class="autoeq-preset-row" id="autoeq-preset-row">
+                                                <div class="autoeq-control-group">
+                                                    <label class="autoeq-control-label">PRESET</label>
+                                                    <select id="parametric-preset-select">
+                                                        <option value="">Custom</option>
+                                                        <option value="flat">Flat</option>
+                                                        <option value="bass_boost">Bass Boost</option>
+                                                        <option value="bass_reducer">Bass Reducer</option>
+                                                        <option value="treble_boost">Treble Boost</option>
+                                                        <option value="treble_reducer">Treble Reducer</option>
+                                                        <option value="vocal_boost">Vocal Boost</option>
+                                                        <option value="loudness">Loudness</option>
+                                                        <option value="rock">Rock</option>
+                                                        <option value="pop">Pop</option>
+                                                        <option value="classical">Classical</option>
+                                                        <option value="jazz">Jazz</option>
+                                                        <option value="electronic">Electronic</option>
+                                                        <option value="hip_hop">Hip-Hop</option>
+                                                        <option value="r_and_b">R&amp;B</option>
+                                                        <option value="acoustic">Acoustic</option>
+                                                        <option value="podcast">Speech</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <!-- Saved Profiles for Parametric EQ -->
+                                            <div class="autoeq-parametric-profiles" id="autoeq-parametric-profiles">
+                                                <div class="autoeq-saved-header">
+                                                    <div class="autoeq-saved-header-left">
+                                                        <span class="autoeq-saved-title">SAVED PROFILES</span>
+                                                        <span class="autoeq-saved-count" id="parametric-saved-count">0</span>
+                                                    </div>
+                                                    <div class="autoeq-saved-header-right">
+                                                        <input
+                                                            type="text"
+                                                            id="parametric-profile-name"
+                                                            class="autoeq-profile-name-input"
+                                                            placeholder="Profile name..."
+                                                            maxlength="50"
+                                                        />
+                                                        <button id="parametric-save-btn" class="btn-primary autoeq-save-btn">Save</button>
+                                                    </div>
+                                                </div>
+                                                <div class="autoeq-saved-grid" id="parametric-saved-grid">
+                                                    <!-- Dynamically populated -->
+                                                </div>
+                                            </div>
+
+                                            <!-- Import/Export -->
+                                            <div class="autoeq-filters-actions">
+                                                <button id="parametric-import-btn" class="btn-secondary" title="Import EQ from text file">
+                                                    Import
+                                                </button>
+                                                <button id="parametric-export-btn" class="btn-secondary" title="Export EQ to text file">
+                                                    Export
+                                                </button>
+                                                <span style="flex:1"></span>
                                             <div class="autoeq-filters-actions">
                                                 <button id="autoeq-add-band-btn" class="btn-secondary" title="Add a new EQ band">
                                                     + Add Band
@@ -4037,6 +4124,7 @@
                                                     Reset
                                                 </button>
                                             </div>
+                                            <input type="file" id="parametric-import-file" accept=".txt" style="display: none" />
                                             <div class="autoeq-preamp-row">
                                                 <span class="autoeq-preamp-label">Preamp</span>
                                                 <input
@@ -4489,64 +4577,6 @@
                                         >
                                             Clear All
                                         </button>
-                                    </div>
-                                </div>
-                                <div
-                                    id="blocked-content-list"
-                                    style="
-                                        display: none;
-                                        margin-top: 1rem;
-                                        border-top: 1px solid var(--border);
-                                        padding-top: 1rem;
-                                    "
-                                >
-                                    <div
-                                        id="blocked-empty-message"
-                                        style="text-align: center; color: var(--muted-foreground); padding: 1rem"
-                                    >
-                                        No content blocked yet.
-                                    </div>
-
-                                    <div id="blocked-artists-section" style="margin-bottom: 1.5rem; display: none">
-                                        <h4
-                                            style="
-                                                font-size: 0.875rem;
-                                                font-weight: 600;
-                                                margin-bottom: 0.5rem;
-                                                color: var(--foreground);
-                                            "
-                                        >
-                                            Blocked Artists
-                                        </h4>
-                                        <ul id="blocked-artists-list" class="blocked-items-list"></ul>
-                                    </div>
-
-                                    <div id="blocked-albums-section" style="margin-bottom: 1.5rem; display: none">
-                                        <h4
-                                            style="
-                                                font-size: 0.875rem;
-                                                font-weight: 600;
-                                                margin-bottom: 0.5rem;
-                                                color: var(--foreground);
-                                            "
-                                        >
-                                            Blocked Albums
-                                        </h4>
-                                        <ul id="blocked-albums-list" class="blocked-items-list"></ul>
-                                    </div>
-
-                                    <div id="blocked-tracks-section" style="margin-bottom: 1.5rem; display: none">
-                                        <h4
-                                            style="
-                                                font-size: 0.875rem;
-                                                font-weight: 600;
-                                                margin-bottom: 0.5rem;
-                                                color: var(--foreground);
-                                            "
-                                        >
-                                            Blocked Tracks
-                                        </h4>
-                                        <ul id="blocked-tracks-list" class="blocked-items-list"></ul>
                                     </div>
                                 </div>
                             </div>
