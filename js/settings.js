@@ -2263,7 +2263,8 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
         modelMap.forEach((variants, name) => {
             const wrapper = document.createElement('div');
-            const firstLetter = name[0]?.toUpperCase() || '?';
+            const rawFirstChar = name[0]?.toUpperCase() || '#';
+            const firstLetter = /^[A-Z]$/.test(rawFirstChar) ? rawFirstChar : '#';
             wrapper.dataset.letter = firstLetter;
 
             const item = document.createElement('div');
