@@ -3880,6 +3880,7 @@
                                                 <li>Adjust <b>filter bands</b> (more = finer correction, 10 is a good default).</li>
                                                 <li>Click <b>AutoEQ</b> &mdash; the algorithm generates parametric filters that shape your headphone's response toward the target.</li>
                                                 <li>The <b>pink corrected curve</b> on the graph shows the predicted result.</li>
+                                                <li><b>Double-click an empty area</b> on the graph to add a new filter band at that frequency. <b>Double-click an existing node</b> to remove it.</li>
                                                 <li><b>Save</b> the profile so you can switch between headphones instantly.</li>
                                             </ol>
                                             <p class="eq-howto-tip">Tip: Use "Auto Preamp Compensation" to prevent clipping from positive EQ gains.</p>
@@ -3890,6 +3891,7 @@
                                             <ol>
                                                 <li>Each band is a <b>peaking filter</b> with frequency, gain, and Q (width).</li>
                                                 <li><b>Drag nodes</b> on the graph to adjust frequency and gain visually.</li>
+                                                <li><b>Double-click an empty area</b> on the graph to add a new band at that exact frequency and gain. <b>Double-click an existing node</b> to delete it.</li>
                                                 <li>Use <b>+ Add Band / - Remove Band</b> to change the number of filters.</li>
                                                 <li>Pick a <b>preset</b> (Bass Boost, Vocal, etc.) as a starting point, then fine-tune.</li>
                                                 <li><b>Import/Export</b> settings in EqualizerAPO format for use in other apps.</li>
@@ -3907,6 +3909,7 @@
                                                 <li>Pick a <b>target</b> &mdash; Harman In-Room is recommended for speakers.</li>
                                                 <li>Set <b>Bass Limit</b> (don't EQ below this) and <b>Room Limit</b> (don't EQ above this) &mdash; the colored lines on the graph show the active range.</li>
                                                 <li>Click <b>AutoEQ</b> to generate correction filters for that channel.</li>
+                                                <li><b>Double-click an empty area</b> on the graph to add a filter band at that frequency. <b>Double-click an existing node</b> to remove it.</li>
                                                 <li>Repeat for each channel, then <b>Export JSON</b> with all channels.</li>
                                             </ol>
                                             <p class="eq-howto-tip">Tip: Place your mic at the listening position. Measure each speaker separately for best results.</p>
@@ -3980,6 +3983,9 @@
 
                                     <!-- AutoEQ Controls -->
                                     <div class="autoeq-controls-section">
+                                        <button id="autoeq-run-btn" class="autoeq-run-btn" disabled>
+                                            AutoEq
+                                        </button>
                                         <div class="autoeq-control-group">
                                             <label class="autoeq-control-label">HEADPHONE MODEL</label>
                                             <div class="autoeq-select-wrapper">
@@ -4049,9 +4055,6 @@
                                         <div class="autoeq-actions-row">
                                             <button id="autoeq-download-btn" class="autoeq-download-btn" title="Export EQ settings" aria-label="Export EQ settings">
                                                 <use svg="!lucide/download.svg" size="20" />
-                                            </button>
-                                            <button id="autoeq-run-btn" class="autoeq-run-btn" disabled>
-                                                AutoEq
                                             </button>
                                         </div>
                                         <span id="autoeq-status" class="autoeq-status"></span>

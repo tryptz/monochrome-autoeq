@@ -1,0 +1,17 @@
+node_modules
+dist
+.DS_Store
+*.local
+.vite
+.vscode
+.claude
+# Docker
+.env
+# Neutralino
+.tmp/
+bin/
+*.log
+.storage/
+auth_storage/
+www
+neutralino.js

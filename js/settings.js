@@ -1847,16 +1847,15 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     bands[draggedNode].gain = Math.max(-30, Math.min(30, bands[draggedNode].gain + gainDelta * 0.3));
                 }
 
-                computeCorrectedCurve();
-                applyBandsToAudio(bands);
                 if (!graphAnimFrame) {
                     graphAnimFrame = requestAnimationFrame(() => {
+                        computeCorrectedCurve();
+                        applyBandsToAudio(bands);
                         drawAutoEQGraph();
                         renderBandControls(bands);
                         graphAnimFrame = null;
                     });
-                }
-            } else {
+                }            } else {
                 const padLeft = 40;
                 if (coords.x <= padLeft + 10) {
                     autoeqCanvas.style.cursor = 'ns-resize';
@@ -1881,6 +1880,58 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             draggedNode = null;
             hoveredNode = null;
             autoeqCanvas.style.cursor = 'crosshair';
+            drawAutoEQGraph();
+        });
+
+        autoeqCanvas.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+            const coords = getCanvasCoords(e);
+            const isParam = currentMode === 'parametric';
+
+            // getActiveBands() returns null in autoeq mode before first run — init to empty array
+            let bands = getActiveBands();
+            if (!bands) {
+                if (currentMode === 'autoeq') { autoeqCurrentBands = []; bands = autoeqCurrentBands; }
+                else return;
+            }
+
+            // findClosestNode needs autoeqCorrectedCurve in non-parametric modes.
+            // Fall back to frequency-only (X-axis) matching when corrected curve is absent.
+            let nodeIdx = findClosestNode(coords.x, coords.y, 18);
+            if (nodeIdx < 0 && !isParam && !autoeqCorrectedCurve && bands.length > 0) {
+                const rect2 = autoeqCanvas.getBoundingClientRect();
+                const w2 = rect2.width - 40 - 10;
+                let best = Infinity;
+                bands.forEach((band, i) => {
+                    const dx = Math.abs(coords.x - (40 + freqToX(band.freq, w2)));
+                    if (dx < 18 && dx < best) { best = dx; nodeIdx = i; }
+                });
+            }
+
+            if (nodeIdx >= 0) {
+                bands.splice(nodeIdx, 1);
+                bands.forEach((b, i) => { b.id = i; });
+                draggedNode = null;
+                hoveredNode = null;
+            } else {
+                if (bands.length >= 32) return;
+                const rect = autoeqCanvas.getBoundingClientRect();
+                const padLeft = 40, padRight = 10, padTop = 10, padBottom = 30;
+                const w = rect.width - padLeft - padRight;
+                const h = rect.height - padTop - padBottom;
+                const dbCenter = isParam ? 0 : 75;
+                const dbHalf = isParam ? graphDbHalfParametric : graphDbHalfAutoEQ;
+                const dbMin = dbCenter - dbHalf;
+                const dbMax = dbCenter + dbHalf;
+                const freq = Math.max(20, Math.min(20000, Math.round(xToFreq(coords.x - padLeft, w))));
+                const gain = Math.max(-30, Math.min(30, Math.round((yToDb(coords.y - padTop, h, dbMin, dbMax) - dbCenter) * 10) / 10));
+                bands.push({ id: bands.length, type: 'peaking', freq, gain, q: 1.0, enabled: true });
+            }
+
+            setActiveBands(bands);
+            computeCorrectedCurve();
+            applyBandsToAudio(bands);
+            renderBandControls(bands);
             drawAutoEQGraph();
         });
 
@@ -3279,8 +3330,6 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const speakerBassCutoffValue = document.getElementById('speaker-bass-cutoff-value');
     const speakerRoomLimit = document.getElementById('speaker-room-limit');
     const speakerRoomLimitValue = document.getElementById('speaker-room-limit-value');
-    const speakerPreampSlider = document.getElementById('speaker-preamp-slider');
-    const speakerPreampValue = document.getElementById('speaker-preamp-value');
     const speakerAutoEqBtn = document.getElementById('speaker-autoeq-btn');
     const speakerEqStatus = document.getElementById('speaker-eq-status');
     const speakerExportBtn = document.getElementById('speaker-export-btn');
@@ -3323,8 +3372,6 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         // Target
         if (speakerTargetSelect) speakerTargetSelect.value = ch.targetId;
         // Preamp
-        if (speakerPreampSlider) speakerPreampSlider.value = ch.preamp;
-        if (speakerPreampValue) speakerPreampValue.textContent = `${ch.preamp} dB`;
     };
 
     // Config change
@@ -3730,14 +3777,6 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             drawAutoEQGraph();
         });
     }
-    if (speakerPreampSlider) {
-        speakerPreampSlider.addEventListener('input', () => {
-            const val = parseFloat(speakerPreampSlider.value);
-            getSpeakerChannel().preamp = val;
-            if (speakerPreampValue) speakerPreampValue.textContent = `${val} dB`;
-        });
-    }
-
     // AutoEQ per channel
     if (speakerAutoEqBtn) {
         speakerAutoEqBtn.addEventListener('click', () => {
@@ -3753,13 +3792,14 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 const bassCut = speakerBassCutoff ? parseInt(speakerBassCutoff.value, 10) : 40;
                 const roomLim = speakerRoomLimit ? parseInt(speakerRoomLimit.value, 10) : 500;
 
-                const bands = runAutoEqAlgorithm(ch.measurement, targetData, bandCount, roomLim, bassCut, 3.0);
+                const sampleRate = autoeqSampleRate ? parseInt(autoeqSampleRate.value, 10) : 48000;
+                const bands = runAutoEqAlgorithm(ch.measurement, targetData, bandCount, roomLim, bassCut, 3.0, sampleRate);
 
                 // Auto preamp
                 let maxGain = 0;
                 for (let f = 20; f <= 20000; f *= 1.1) {
                     let total = 0;
-                    bands.forEach(b => { if (b.enabled) total += calculateBiquadResponse(f, b); });
+                    bands.forEach(b => { if (b.enabled) total += calculateBiquadResponse(f, b, sampleRate); });
                     if (total > maxGain) maxGain = total;
                 }
                 const autoPreamp = maxGain > 0 ? parseFloat((-maxGain - 0.1).toFixed(1)) : 0;
