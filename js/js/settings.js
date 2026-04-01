@@ -1237,7 +1237,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     // AutoEQ State (kept when switching modes)
     let autoeqSelectedMeasurement = null;
     let autoeqSelectedEntry = null;
-    let autoeqCurrentBands = null;   // AutoEQ-generated bands
+    let autoeqCurrentBands = null; // AutoEQ-generated bands
     let autoeqCorrectedCurve = null;
     let currentPreamp = equalizerSettings.getPreamp();
 
@@ -1328,7 +1328,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         autoeqHeadphoneSelect.addEventListener('change', () => {
             const selected = autoeqHeadphoneSelect.value;
             if (!selected) return;
-            const popularEntry = POPULAR_HEADPHONES.find(hp => hp.name === selected);
+            const popularEntry = POPULAR_HEADPHONES.find((hp) => hp.name === selected);
             if (popularEntry && (!autoeqSelectedEntry || autoeqSelectedEntry.name !== selected)) {
                 loadHeadphoneEntry(popularEntry);
             }
@@ -1353,7 +1353,6 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const formatFreq = (freq) => {
         if (freq >= 1000) return (freq / 1000).toFixed(freq % 1000 === 0 ? 0 : 1) + 'k';
         return Math.round(freq).toString();
-
     };
 
     /**
@@ -1371,7 +1370,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         autoeqCanvas.height = rect.height * dpr;
         ctx.scale(dpr, dpr);
 
-        const padLeft = 40, padRight = 10, padTop = 10, padBottom = 30;
+        const padLeft = 40,
+            padRight = 10,
+            padTop = 10,
+            padBottom = 30;
         const w = rect.width - padLeft - padRight;
         const h = rect.height - padTop - padBottom;
 
@@ -1391,9 +1393,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         // Fixed curve colors (work across all themes)
         const gridColor = 'rgba(255,255,255,0.06)';
         const textColor = 'rgba(255,255,255,0.4)';
-        const originalColor = '#3b82f6';       // Blue
+        const originalColor = '#3b82f6'; // Blue
         const targetColor = 'rgba(255,255,255,0.5)'; // White/gray dashed
-        const correctedColor = '#f472b6';      // Pink
+        const correctedColor = '#f472b6'; // Pink
 
         // Draw grid
         ctx.strokeStyle = gridColor;
@@ -1444,8 +1446,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 if (p.freq < FREQ_MIN || p.freq > FREQ_MAX) continue;
                 const x = gx(p.freq);
                 const y = gy(p.gain);
-                if (!started) { ctx.moveTo(x, y); started = true; }
-                else ctx.lineTo(x, y);
+                if (!started) {
+                    ctx.moveTo(x, y);
+                    started = true;
+                } else ctx.lineTo(x, y);
             }
             ctx.stroke();
             ctx.restore();
@@ -1456,12 +1460,12 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         if (currentMode === 'speaker') {
             const sCh = speakerChannels[speakerActiveChannel];
             targetId = sCh?.targetId || 'harman_room';
-            targetEntry = SPEAKER_TARGETS.find(t => t.id === targetId);
+            targetEntry = SPEAKER_TARGETS.find((t) => t.id === targetId);
             targetData = targetEntry?.data;
             graphMeasurement = sCh?.measurement;
         } else {
             targetId = autoeqTargetSelect ? autoeqTargetSelect.value : 'harman_oe_2018';
-            targetEntry = TARGETS.find(t => t.id === targetId);
+            targetEntry = TARGETS.find((t) => t.id === targetId);
             targetData = targetEntry?.data;
             graphMeasurement = autoeqSelectedMeasurement;
         }
@@ -1479,15 +1483,32 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
             if (activeBands && activeBands.length > 0) {
                 const sampleRate = autoeqSampleRate ? parseInt(autoeqSampleRate.value, 10) : 48000;
-                const nodeColors = ['#f472b6','#fb923c','#facc15','#4ade80','#22d3ee','#818cf8','#c084fc','#f87171','#34d399','#60a5fa','#a78bfa','#fb7185','#fbbf24','#2dd4bf','#38bdf8','#a3e635'];
+                const nodeColors = [
+                    '#f472b6',
+                    '#fb923c',
+                    '#facc15',
+                    '#4ade80',
+                    '#22d3ee',
+                    '#818cf8',
+                    '#c084fc',
+                    '#f87171',
+                    '#34d399',
+                    '#60a5fa',
+                    '#a78bfa',
+                    '#fb7185',
+                    '#fbbf24',
+                    '#2dd4bf',
+                    '#38bdf8',
+                    '#a3e635',
+                ];
 
                 // Draw individual band bell curves (filled)
                 activeBands.forEach((band, i) => {
                     if (!band.enabled || Math.abs(band.gain) < 0.1) return;
                     const color = nodeColors[i % nodeColors.length];
-                    const r = parseInt(color.slice(1,3), 16);
-                    const g2 = parseInt(color.slice(3,5), 16);
-                    const b2 = parseInt(color.slice(5,7), 16);
+                    const r = parseInt(color.slice(1, 3), 16);
+                    const g2 = parseInt(color.slice(3, 5), 16);
+                    const b2 = parseInt(color.slice(5, 7), 16);
 
                     // Draw filled bell shape
                     ctx.save();
@@ -1509,8 +1530,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                         const resp = calculateBiquadResponse(f, band, sampleRate);
                         const bx = gx(f);
                         const by = gy(resp);
-                        if (!started) { ctx.moveTo(bx, by); started = true; }
-                        else ctx.lineTo(bx, by);
+                        if (!started) {
+                            ctx.moveTo(bx, by);
+                            started = true;
+                        } else ctx.lineTo(bx, by);
                     }
                     ctx.strokeStyle = `rgba(${r},${g2},${b2},0.5)`;
                     ctx.lineWidth = 1;
@@ -1541,20 +1564,22 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
             // Draw Target curve (shifted)
             if (targetData) {
-                const shiftedTarget = targetData.map(p => ({ freq: p.freq, gain: p.gain + graphShift }));
+                const shiftedTarget = targetData.map((p) => ({ freq: p.freq, gain: p.gain + graphShift }));
                 drawCurve(shiftedTarget, targetColor, 1.5, true);
             }
 
             // Draw Original measurement (normalized + shifted)
             if (graphMeasurement) {
-                const normOff = targetData ? getNormalizationOffset(targetData) - getNormalizationOffset(graphMeasurement) : 0;
-                const normalized = graphMeasurement.map(p => ({ freq: p.freq, gain: p.gain + normOff + graphShift }));
+                const normOff = targetData
+                    ? getNormalizationOffset(targetData) - getNormalizationOffset(graphMeasurement)
+                    : 0;
+                const normalized = graphMeasurement.map((p) => ({ freq: p.freq, gain: p.gain + normOff + graphShift }));
                 drawCurve(normalized, originalColor, 1.5);
             }
 
             // Draw Corrected curve (shifted)
             if (autoeqCorrectedCurve) {
-                const shiftedCorrected = autoeqCorrectedCurve.map(p => ({ freq: p.freq, gain: p.gain + graphShift }));
+                const shiftedCorrected = autoeqCorrectedCurve.map((p) => ({ freq: p.freq, gain: p.gain + graphShift }));
                 drawCurve(shiftedCorrected, correctedColor, 2);
             }
         }
@@ -1631,7 +1656,24 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 const y = gy(nodeGain);
 
                 // Draw node circle with unique color per band
-                const nodeColors = ['#f472b6','#fb923c','#facc15','#4ade80','#22d3ee','#818cf8','#c084fc','#f87171','#34d399','#60a5fa','#a78bfa','#fb7185','#fbbf24','#2dd4bf','#38bdf8','#a3e635'];
+                const nodeColors = [
+                    '#f472b6',
+                    '#fb923c',
+                    '#facc15',
+                    '#4ade80',
+                    '#22d3ee',
+                    '#818cf8',
+                    '#c084fc',
+                    '#f87171',
+                    '#34d399',
+                    '#60a5fa',
+                    '#a78bfa',
+                    '#fb7185',
+                    '#fbbf24',
+                    '#2dd4bf',
+                    '#38bdf8',
+                    '#a3e635',
+                ];
                 const nodeColor = nodeColors[i % nodeColors.length];
                 const isHovered = i === hoveredNode;
                 const isDragged = i === draggedNode;
@@ -1644,9 +1686,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     ctx.arc(x, y, radius + 4, 0, Math.PI * 2);
                     ctx.fillStyle = nodeColor.replace(')', ', 0.25)').replace('rgb', 'rgba').replace('#', '');
                     // Use hex to rgba
-                    const r2 = parseInt(nodeColor.slice(1,3), 16);
-                    const g2 = parseInt(nodeColor.slice(3,5), 16);
-                    const b2 = parseInt(nodeColor.slice(5,7), 16);
+                    const r2 = parseInt(nodeColor.slice(1, 3), 16);
+                    const g2 = parseInt(nodeColor.slice(3, 5), 16);
+                    const b2 = parseInt(nodeColor.slice(5, 7), 16);
                     ctx.fillStyle = `rgba(${r2},${g2},${b2},0.25)`;
                     ctx.fill();
                     ctx.restore();
@@ -1702,12 +1744,12 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             autoeqCorrectedCurve = null;
             return;
         }
-        const targetEntry = tList.find(t => t.id === tId);
+        const targetEntry = tList.find((t) => t.id === tId);
         const targetData = targetEntry?.data;
         const normOff = targetData ? getNormalizationOffset(targetData) - getNormalizationOffset(measurement) : 0;
         const sampleRate = autoeqSampleRate ? parseInt(autoeqSampleRate.value, 10) : 48000;
 
-        autoeqCorrectedCurve = measurement.map(p => {
+        autoeqCorrectedCurve = measurement.map((p) => {
             let correction = 0;
             for (const band of bands) {
                 if (band.enabled) correction += calculateBiquadResponse(p.freq, band, sampleRate);
@@ -1734,7 +1776,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         if (!isParam && !autoeqCorrectedCurve) return -1;
 
         const rect = autoeqCanvas.getBoundingClientRect();
-        const padLeft = 40, padRight = 10, padTop = 10, padBottom = 30;
+        const padLeft = 40,
+            padRight = 10,
+            padTop = 10,
+            padBottom = 30;
         const w = rect.width - padLeft - padRight;
         const h = rect.height - padTop - padBottom;
 
@@ -1756,14 +1801,15 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 tList = TARGETS;
                 meas = autoeqSelectedMeasurement;
             }
-            const targetEntry = tList.find(t => t.id === tId);
+            const targetEntry = tList.find((t) => t.id === tId);
             const targetData = targetEntry?.data;
             if (targetData) graphShift = 75 - getNormalizationOffset(targetData);
             else if (meas) graphShift = 75 - getNormalizationOffset(meas);
         }
 
         const sampleRate = autoeqSampleRate ? parseInt(autoeqSampleRate.value, 10) : 48000;
-        let closest = -1, closestDist = Infinity;
+        let closest = -1,
+            closestDist = Infinity;
         activeBands.forEach((band, i) => {
             if (!band.enabled) return;
             const x = padLeft + freqToX(band.freq, w);
@@ -1824,7 +1870,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             const bands = getActiveBands();
             if (draggedNode !== null && bands) {
                 const rect = autoeqCanvas.getBoundingClientRect();
-                const padLeft = 40, padRight = 10, padTop = 10, padBottom = 30;
+                const padLeft = 40,
+                    padRight = 10,
+                    padTop = 10,
+                    padBottom = 30;
                 const w = rect.width - padLeft - padRight;
                 const h = rect.height - padTop - padBottom;
 
@@ -1860,7 +1909,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 const padLeft = 40;
                 if (coords.x <= padLeft + 10) {
                     autoeqCanvas.style.cursor = 'ns-resize';
-                    if (hoveredNode !== null) { hoveredNode = null; drawAutoEQGraph(); }
+                    if (hoveredNode !== null) {
+                        hoveredNode = null;
+                        drawAutoEQGraph();
+                    }
                 } else {
                     const newHovered = findClosestNode(coords.x, coords.y, 18);
                     if (newHovered !== hoveredNode) {
@@ -1893,14 +1945,19 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             if (nodeIdx >= 0) {
                 // Delete node on double-click
                 bands.splice(nodeIdx, 1);
-                bands.forEach((b, i) => { b.id = i; });
+                bands.forEach((b, i) => {
+                    b.id = i;
+                });
                 draggedNode = null;
                 hoveredNode = null;
             } else {
                 // Create node at click position — max 32 bands
                 if (bands.length >= 32) return;
                 const rect = autoeqCanvas.getBoundingClientRect();
-                const padLeft = 40, padRight = 10, padTop = 10, padBottom = 30;
+                const padLeft = 40,
+                    padRight = 10,
+                    padTop = 10,
+                    padBottom = 30;
                 const w = rect.width - padLeft - padRight;
                 const h = rect.height - padTop - padBottom;
                 const isParam = currentMode === 'parametric';
@@ -1922,79 +1979,97 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             drawAutoEQGraph();
         });
 
-        autoeqCanvas.addEventListener('wheel', (e) => {
-            const coords = getCanvasCoords(e);
-            const padLeft = 40;
+        autoeqCanvas.addEventListener(
+            'wheel',
+            (e) => {
+                const coords = getCanvasCoords(e);
+                const padLeft = 40;
 
-            // Scroll on Y axis area (left edge) = dB zoom
-            if (coords.x <= padLeft + 10) {
-                e.preventDefault();
-                const zoomStep = e.deltaY > 0 ? 2 : -2; // scroll down = zoom out (wider range), scroll up = zoom in
-                if (currentMode === 'parametric') {
-                    graphDbHalfParametric = Math.max(5, Math.min(60, graphDbHalfParametric + zoomStep));
-                } else {
-                    graphDbHalfAutoEQ = Math.max(5, Math.min(60, graphDbHalfAutoEQ + zoomStep));
+                // Scroll on Y axis area (left edge) = dB zoom
+                if (coords.x <= padLeft + 10) {
+                    e.preventDefault();
+                    const zoomStep = e.deltaY > 0 ? 2 : -2; // scroll down = zoom out (wider range), scroll up = zoom in
+                    if (currentMode === 'parametric') {
+                        graphDbHalfParametric = Math.max(5, Math.min(60, graphDbHalfParametric + zoomStep));
+                    } else {
+                        graphDbHalfAutoEQ = Math.max(5, Math.min(60, graphDbHalfAutoEQ + zoomStep));
+                    }
+                    drawAutoEQGraph();
+                    return;
                 }
-                drawAutoEQGraph();
-                return;
-            }
 
-            // Scroll on a node = Q adjust
-            const wBands = getActiveBands();
-            if (hoveredNode >= 0 && wBands && wBands[hoveredNode]) {
-                e.preventDefault();
-                const band = wBands[hoveredNode];
-                const delta = e.deltaY > 0 ? -0.15 : 0.15;
-                band.q = Math.max(0.1, Math.min(10, (band.q || 1) + delta));
-                computeCorrectedCurve();
-                applyBandsToAudio(wBands);
-                drawAutoEQGraph();
-                renderBandControls(wBands);
-            }
-        }, { passive: false });
+                // Scroll on a node = Q adjust
+                const wBands = getActiveBands();
+                if (hoveredNode >= 0 && wBands && wBands[hoveredNode]) {
+                    e.preventDefault();
+                    const band = wBands[hoveredNode];
+                    const delta = e.deltaY > 0 ? -0.15 : 0.15;
+                    band.q = Math.max(0.1, Math.min(10, (band.q || 1) + delta));
+                    computeCorrectedCurve();
+                    applyBandsToAudio(wBands);
+                    drawAutoEQGraph();
+                    renderBandControls(wBands);
+                }
+            },
+            { passive: false }
+        );
 
         // Touch support
         let touchNodeIdx = -1;
-        autoeqCanvas.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            const coords = { x: touch.clientX - autoeqCanvas.getBoundingClientRect().left, y: touch.clientY - autoeqCanvas.getBoundingClientRect().top };
-            touchNodeIdx = findClosestNode(coords.x, coords.y, 25);
-            if (touchNodeIdx >= 0) {
-                draggedNode = touchNodeIdx;
-                e.preventDefault();
-            }
-        }, { passive: false });
-
-        autoeqCanvas.addEventListener('touchmove', (e) => {
-            const tBands = getActiveBands();
-            if (draggedNode !== null && tBands) {
+        autoeqCanvas.addEventListener(
+            'touchstart',
+            (e) => {
                 const touch = e.touches[0];
-                const rect = autoeqCanvas.getBoundingClientRect();
-                const coords = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
-                const padLeft = 40, padRight = 10, padTop = 10, padBottom = 30;
-                const w = rect.width - padLeft - padRight;
-                const h = rect.height - padTop - padBottom;
-
-                const freq = xToFreq(coords.x - padLeft, w);
-                tBands[draggedNode].freq = Math.max(20, Math.min(20000, freq));
-
-                if (currentMode === 'parametric') {
-                    const newGain = yToDb(coords.y - padTop, h, -graphDbHalfParametric, graphDbHalfParametric);
-                    tBands[draggedNode].gain = Math.max(-30, Math.min(30, Math.round(newGain * 10) / 10));
+                const coords = {
+                    x: touch.clientX - autoeqCanvas.getBoundingClientRect().left,
+                    y: touch.clientY - autoeqCanvas.getBoundingClientRect().top,
+                };
+                touchNodeIdx = findClosestNode(coords.x, coords.y, 25);
+                if (touchNodeIdx >= 0) {
+                    draggedNode = touchNodeIdx;
+                    e.preventDefault();
                 }
+            },
+            { passive: false }
+        );
 
-                computeCorrectedCurve();
-                applyBandsToAudio(tBands);
-                if (!graphAnimFrame) {
-                    graphAnimFrame = requestAnimationFrame(() => {
-                        drawAutoEQGraph();
-                        renderBandControls(tBands);
-                        graphAnimFrame = null;
-                    });
+        autoeqCanvas.addEventListener(
+            'touchmove',
+            (e) => {
+                const tBands = getActiveBands();
+                if (draggedNode !== null && tBands) {
+                    const touch = e.touches[0];
+                    const rect = autoeqCanvas.getBoundingClientRect();
+                    const coords = { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+                    const padLeft = 40,
+                        padRight = 10,
+                        padTop = 10,
+                        padBottom = 30;
+                    const w = rect.width - padLeft - padRight;
+                    const h = rect.height - padTop - padBottom;
+
+                    const freq = xToFreq(coords.x - padLeft, w);
+                    tBands[draggedNode].freq = Math.max(20, Math.min(20000, freq));
+
+                    if (currentMode === 'parametric') {
+                        const newGain = yToDb(coords.y - padTop, h, -graphDbHalfParametric, graphDbHalfParametric);
+                        tBands[draggedNode].gain = Math.max(-30, Math.min(30, Math.round(newGain * 10) / 10));
+                    }
+
+                    computeCorrectedCurve();
+                    applyBandsToAudio(tBands);
+                    if (!graphAnimFrame) {
+                        graphAnimFrame = requestAnimationFrame(() => {
+                            drawAutoEQGraph();
+                            renderBandControls(tBands);
+                            graphAnimFrame = null;
+                        });
+                    }
+                    e.preventDefault();
                 }
-                e.preventDefault();
-            }
-        }, { passive: false });
+            },
+            { passive: false }
+        );
 
         autoeqCanvas.addEventListener('touchend', () => {
             draggedNode = null;
@@ -2003,7 +2078,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
         // Resize observer for graph
         if (autoeqGraphWrapper) {
-            const ro = new ResizeObserver(() => { drawAutoEQGraph(); });
+            const ro = new ResizeObserver(() => {
+                drawAutoEQGraph();
+            });
             ro.observe(autoeqGraphWrapper);
         }
     }
@@ -2142,7 +2219,8 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         autoeqSavedCollapse.addEventListener('click', (e) => {
             e.stopPropagation();
             autoeqSavedCollapse.classList.toggle('collapsed');
-            if (savedGrid) savedGrid.style.display = autoeqSavedCollapse.classList.contains('collapsed') ? 'none' : 'flex';
+            if (savedGrid)
+                savedGrid.style.display = autoeqSavedCollapse.classList.contains('collapsed') ? 'none' : 'flex';
         });
     }
 
@@ -2150,7 +2228,8 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     if (autoeqFiltersToggle) {
         autoeqFiltersToggle.addEventListener('click', () => {
             if (autoeqFiltersCollapse) autoeqFiltersCollapse.classList.toggle('collapsed');
-            if (autoeqFiltersContent) autoeqFiltersContent.style.display = autoeqFiltersContent.style.display === 'none' ? 'flex' : 'none';
+            if (autoeqFiltersContent)
+                autoeqFiltersContent.style.display = autoeqFiltersContent.style.display === 'none' ? 'flex' : 'none';
         });
     }
 
@@ -2206,7 +2285,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
         const drawMiniFill = (data, colors) => {
             if (!data || data.length < 2) return;
-            const allGains = data.map(p => p.gain);
+            const allGains = data.map((p) => p.gain);
             const dMin = Math.min(...allGains) - 2;
             const dMax = Math.max(...allGains) + 2;
             const dRange = dMax - dMin || 1;
@@ -2247,7 +2326,18 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         if (correctedData) drawMiniFill(correctedData, ['#22c55e', '#06b6d4', '#3b82f6']);
     };
 
-    const BAND_PREVIEW_COLORS = ['#f472b6','#fb923c','#facc15','#4ade80','#22d3ee','#818cf8','#c084fc','#f87171','#34d399','#60a5fa'];
+    const BAND_PREVIEW_COLORS = [
+        '#f472b6',
+        '#fb923c',
+        '#facc15',
+        '#4ade80',
+        '#22d3ee',
+        '#818cf8',
+        '#c084fc',
+        '#f87171',
+        '#34d399',
+        '#60a5fa',
+    ];
 
     const drawBandsPreview = (canvas, bands, sampleRate) => {
         if (!canvas || !bands || bands.length === 0) return;
@@ -2281,13 +2371,16 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             const pts = [];
             for (let f = 20; f <= 20000; f *= 1.04) {
                 const resp = calculateBiquadResponse(f, band, sr);
-                pts.push({ x: freqToX(f, pw), y: mid - (Math.max(-dbRange, Math.min(dbRange, resp)) / dbRange) * mid * 0.9 });
+                pts.push({
+                    x: freqToX(f, pw),
+                    y: mid - (Math.max(-dbRange, Math.min(dbRange, resp)) / dbRange) * mid * 0.9,
+                });
             }
             if (!pts.length) return;
 
             ctx.beginPath();
             ctx.moveTo(pts[0].x, mid);
-            pts.forEach(p => ctx.lineTo(p.x, p.y));
+            pts.forEach((p) => ctx.lineTo(p.x, p.y));
             ctx.lineTo(pts[pts.length - 1].x, mid);
             ctx.closePath();
             const grad = ctx.createLinearGradient(0, 0, pw, 0);
@@ -2298,7 +2391,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             ctx.fill();
 
             ctx.beginPath();
-            pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+            pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
             ctx.strokeStyle = color;
             ctx.lineWidth = 1.5;
             ctx.globalAlpha = 0.85;
@@ -2311,10 +2404,12 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         let first = true;
         for (let f = 20; f <= 20000; f *= 1.04) {
             let total = 0;
-            for (const b of bands) { if (b.enabled) total += calculateBiquadResponse(f, b, sr); }
+            for (const b of bands) {
+                if (b.enabled) total += calculateBiquadResponse(f, b, sr);
+            }
             const x = freqToX(f, pw);
             const y = mid - (Math.max(-dbRange, Math.min(dbRange, total)) / dbRange) * mid * 0.9;
-            first ? (ctx.moveTo(x, y), first = false) : ctx.lineTo(x, y);
+            first ? (ctx.moveTo(x, y), (first = false)) : ctx.lineTo(x, y);
         }
         ctx.strokeStyle = 'rgba(255,255,255,0.9)';
         ctx.lineWidth = 2;
@@ -2386,7 +2481,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         if (!autoeqCurrentBands || !autoeqSelectedMeasurement) return;
 
         const targetId = autoeqTargetSelect ? autoeqTargetSelect.value : 'harman_oe_2018';
-        const targetEntry = TARGETS.find(t => t.id === targetId);
+        const targetEntry = TARGETS.find((t) => t.id === targetId);
 
         const profile = {
             id: 'autoeq_' + Date.now(),
@@ -2395,10 +2490,13 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             headphoneType: autoeqSelectedEntry ? autoeqSelectedEntry.type : 'over-ear',
             targetId,
             targetLabel: targetEntry ? targetEntry.label : targetId,
-            bandCount: (autoeqBandCount && autoeqBandCount.value ? parseInt(autoeqBandCount.value, 10) : null) || autoeqCurrentBands.length || 10,
+            bandCount:
+                (autoeqBandCount && autoeqBandCount.value ? parseInt(autoeqBandCount.value, 10) : null) ||
+                autoeqCurrentBands.length ||
+                10,
             maxFreq: autoeqMaxFreq ? parseInt(autoeqMaxFreq.value, 10) : 16000,
             sampleRate: autoeqSampleRate ? parseInt(autoeqSampleRate.value, 10) : 48000,
-            bands: autoeqCurrentBands.map(b => ({ ...b })),
+            bands: autoeqCurrentBands.map((b) => ({ ...b })),
             gains: audioContextManager.getGains ? audioContextManager.getGains() : [],
             preamp: equalizerSettings.getPreamp(),
             measurementData: downsampleCurve(autoeqSelectedMeasurement),
@@ -2418,7 +2516,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         const profile = profiles[profileId];
         if (!profile) return;
 
-        autoeqCurrentBands = profile.bands.map(b => ({ ...b }));
+        autoeqCurrentBands = profile.bands.map((b) => ({ ...b }));
         autoeqCorrectedCurve = profile.correctedData ? [...profile.correctedData] : null;
         autoeqSelectedMeasurement = profile.measurementData ? [...profile.measurementData] : null;
         autoeqSelectedEntry = { name: profile.headphoneName, type: profile.headphoneType };
@@ -2513,13 +2611,14 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         if (!append) autoeqDatabaseList.innerHTML = '';
 
         if (entries.length === 0 && !append) {
-            autoeqDatabaseList.innerHTML = '<div style="padding: 1rem; text-align: center; color: var(--muted-foreground); font-size: 0.8rem;">No results found</div>';
+            autoeqDatabaseList.innerHTML =
+                '<div style="padding: 1rem; text-align: center; color: var(--muted-foreground); font-size: 0.8rem;">No results found</div>';
             return;
         }
 
         // Group by base model name (strip source suffix like "(crinacle)")
         const modelMap = new Map();
-        entries.forEach(entry => {
+        entries.forEach((entry) => {
             const baseName = entry.name.replace(/\s*\([^)]*\)\s*$/, '').trim() || entry.name;
             if (!modelMap.has(baseName)) {
                 modelMap.set(baseName, []);
@@ -2553,7 +2652,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 const subList = document.createElement('div');
                 subList.className = 'autoeq-db-sub-list';
 
-                variants.forEach(entry => {
+                variants.forEach((entry) => {
                     const subItem = document.createElement('div');
                     subItem.className = 'autoeq-db-sub-item';
                     // Extract source from parentheses
@@ -2591,12 +2690,12 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         alphaContainer.innerHTML = '';
 
         const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ#'.split('');
-        letters.forEach(letter => {
+        letters.forEach((letter) => {
             const btn = document.createElement('button');
             btn.textContent = letter;
             btn.addEventListener('click', () => {
                 // Find the index of the first entry starting with this letter
-                const targetIdx = _dbFilteredEntries.findIndex(e => {
+                const targetIdx = _dbFilteredEntries.findIndex((e) => {
                     const first = e.name[0].toUpperCase();
                     return letter === '#' ? !/[A-Z]/.test(first) : first === letter;
                 });
@@ -2708,7 +2807,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             setTimeout(() => {
                 try {
                     const targetId = autoeqTargetSelect ? autoeqTargetSelect.value : 'harman_oe_2018';
-                    const targetEntry = TARGETS.find(t => t.id === targetId);
+                    const targetEntry = TARGETS.find((t) => t.id === targetId);
                     if (!targetEntry || !targetEntry.data || targetEntry.data.length === 0) {
                         setAutoEQStatus('Invalid target curve', 'error');
                         autoeqRunBtn.disabled = false;
@@ -2719,7 +2818,15 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     const maxFreq = autoeqMaxFreq ? parseInt(autoeqMaxFreq.value, 10) : 16000;
                     const sampleRate = autoeqSampleRate ? parseInt(autoeqSampleRate.value, 10) : 48000;
 
-                    const bands = runAutoEqAlgorithm(autoeqSelectedMeasurement, targetEntry.data, bandCount, maxFreq, 20, 5.0, sampleRate);
+                    const bands = runAutoEqAlgorithm(
+                        autoeqSelectedMeasurement,
+                        targetEntry.data,
+                        bandCount,
+                        maxFreq,
+                        20,
+                        5.0,
+                        sampleRate
+                    );
 
                     if (!bands || bands.length === 0) {
                         setAutoEQStatus('No correction needed', 'success');
@@ -2805,7 +2912,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     const customLabel = file.name.replace(/\.(txt|csv)$/i, '');
 
                     // Inject or update in TARGETS array
-                    const existing = TARGETS.findIndex(t => t.id === customId);
+                    const existing = TARGETS.findIndex((t) => t.id === customId);
                     if (existing > -1) {
                         TARGETS[existing] = { id: customId, label: customLabel, data };
                     } else {
@@ -2850,7 +2957,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             autoeqCurrentBands.forEach((band, i) => {
                 if (!band.enabled) return;
                 const type = band.type === 'peaking' ? 'PK' : band.type === 'lowshelf' ? 'LSC' : 'HSC';
-                lines.push(`Filter ${i + 1}: ON ${type} Fc ${Math.round(band.freq)} Hz Gain ${band.gain.toFixed(1)} dB Q ${band.q.toFixed(2)}`);
+                lines.push(
+                    `Filter ${i + 1}: ON ${type} Fc ${Math.round(band.freq)} Hz Gain ${band.gain.toFixed(1)} dB Q ${band.q.toFixed(2)}`
+                );
             });
             const exportText = lines.join('\n');
             const blob = new Blob([exportText], { type: 'text/plain' });
@@ -2874,7 +2983,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 // Recalculate and apply auto preamp immediately
                 const bands = getActiveBands();
                 if (bands && bands.length > 0) {
-                    const maxGain = Math.max(0, ...bands.filter(b => b.enabled).map(b => b.gain));
+                    const maxGain = Math.max(0, ...bands.filter((b) => b.enabled).map((b) => b.gain));
                     const autoPreamp = maxGain > 0 ? -Math.round(maxGain * 10) / 10 : 0;
                     currentPreamp = autoPreamp;
                     equalizerSettings.setPreamp(autoPreamp);
@@ -2919,24 +3028,34 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     // ========================================
     const SPEAKER_CONFIGS = {
         '2.0': ['FL', 'FR'],
-        '5.1': ['FL', 'FR', 'C', 'LFE', 'SL', 'SR'],
-        '7.1': ['FL', 'FR', 'C', 'LFE', 'SL', 'SR', 'SBL', 'SBR'],
+        5.1: ['FL', 'FR', 'C', 'LFE', 'SL', 'SR'],
+        7.1: ['FL', 'FR', 'C', 'LFE', 'SL', 'SR', 'SBL', 'SBR'],
     };
     const SPEAKER_CHANNEL_LABELS = {
-        FL: 'Front L', FR: 'Front R', C: 'Center', LFE: 'Sub',
-        SL: 'Surr L', SR: 'Surr R', SBL: 'Back L', SBR: 'Back R',
+        FL: 'Front L',
+        FR: 'Front R',
+        C: 'Center',
+        LFE: 'Sub',
+        SL: 'Surr L',
+        SR: 'Surr R',
+        SBL: 'Back L',
+        SBR: 'Back R',
     };
     let speakerConfig = '2.0';
     let speakerActiveChannel = 'FL';
     const speakerChannels = {};
     // Initialize all channels
-    Object.keys(SPEAKER_CHANNEL_LABELS).forEach(id => {
+    Object.keys(SPEAKER_CHANNEL_LABELS).forEach((id) => {
         speakerChannels[id] = {
             measurement: null,
             targetId: 'harman_room',
             bands: Array.from({ length: 10 }, (_, i) => ({
-                id: i, type: 'peaking', freq: Math.round(100 * Math.pow(2, i)),
-                gain: 0, q: 1.41, enabled: true,
+                id: i,
+                type: 'peaking',
+                freq: Math.round(100 * Math.pow(2, i)),
+                gain: 0,
+                q: 1.41,
+                enabled: true,
             })),
             preamp: 0,
         };
@@ -2954,7 +3073,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const setEQMode = (mode) => {
         currentMode = mode;
         localStorage.setItem(EQ_MODE_KEY, mode);
-        modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+        modeButtons.forEach((b) => b.classList.toggle('active', b.dataset.mode === mode));
 
         const graphSection = document.querySelector('.autoeq-graph-section');
         const controlsSection = document.querySelector('.autoeq-controls-section');
@@ -3006,7 +3125,14 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 const defaultBands = [];
                 for (let i = 0; i < 10; i++) {
                     const freq = 20 * Math.pow(20000 / 20, i / 9);
-                    defaultBands.push({ id: i, type: 'peaking', freq: Math.round(freq), gain: 0, q: 1.0, enabled: true });
+                    defaultBands.push({
+                        id: i,
+                        type: 'peaking',
+                        freq: Math.round(freq),
+                        gain: 0,
+                        q: 1.0,
+                        enabled: true,
+                    });
                 }
                 parametricBands = defaultBands;
             }
@@ -3037,13 +3163,19 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         // Update tutorial tab if visible
         const hp = document.getElementById('eq-howto-panel');
         if (hp && hp.style.display !== 'none') {
-            const tabs = { autoeq: document.getElementById('eq-howto-autoeq'), parametric: document.getElementById('eq-howto-parametric'), speaker: document.getElementById('eq-howto-speaker') };
-            Object.values(tabs).forEach(t => { if (t) t.style.display = 'none'; });
+            const tabs = {
+                autoeq: document.getElementById('eq-howto-autoeq'),
+                parametric: document.getElementById('eq-howto-parametric'),
+                speaker: document.getElementById('eq-howto-speaker'),
+            };
+            Object.values(tabs).forEach((t) => {
+                if (t) t.style.display = 'none';
+            });
             if (tabs[mode]) tabs[mode].style.display = '';
         }
     };
 
-    modeButtons.forEach(btn => {
+    modeButtons.forEach((btn) => {
         btn.addEventListener('click', () => setEQMode(btn.dataset.mode));
     });
 
@@ -3053,10 +3185,16 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const howtoBtn = document.getElementById('eq-howto-btn');
     const howtoPanel = document.getElementById('eq-howto-panel');
     const howtoClose = document.getElementById('eq-howto-close');
-    const howtoTabs = { autoeq: document.getElementById('eq-howto-autoeq'), parametric: document.getElementById('eq-howto-parametric'), speaker: document.getElementById('eq-howto-speaker') };
+    const howtoTabs = {
+        autoeq: document.getElementById('eq-howto-autoeq'),
+        parametric: document.getElementById('eq-howto-parametric'),
+        speaker: document.getElementById('eq-howto-speaker'),
+    };
 
     const updateHowtoTab = () => {
-        Object.values(howtoTabs).forEach(t => { if (t) t.style.display = 'none'; });
+        Object.values(howtoTabs).forEach((t) => {
+            if (t) t.style.display = 'none';
+        });
         const active = howtoTabs[currentMode];
         if (active) active.style.display = '';
     };
@@ -3069,7 +3207,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         });
     }
     if (howtoClose && howtoPanel) {
-        howtoClose.addEventListener('click', () => { howtoPanel.style.display = 'none'; });
+        howtoClose.addEventListener('click', () => {
+            howtoPanel.style.display = 'none';
+        });
     }
 
     // ========================================
@@ -3132,8 +3272,11 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const PARAMETRIC_ACTIVE_KEY = 'parametric-eq-active-profile';
 
     const getParametricProfiles = () => {
-        try { return JSON.parse(localStorage.getItem(PARAMETRIC_PROFILES_KEY)) || {}; }
-        catch { return {}; }
+        try {
+            return JSON.parse(localStorage.getItem(PARAMETRIC_PROFILES_KEY)) || {};
+        } catch {
+            return {};
+        }
     };
 
     const renderParametricProfiles = () => {
@@ -3147,7 +3290,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         if (countEl) countEl.textContent = keys.length;
         grid.innerHTML = '';
 
-        keys.forEach(id => {
+        keys.forEach((id) => {
             const profile = profiles[id];
             const card = document.createElement('div');
             card.className = 'autoeq-profile-card' + (id === activeId ? ' active' : '');
@@ -3182,7 +3325,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             card.appendChild(delBtn);
 
             card.addEventListener('click', () => {
-                parametricBands = profile.bands.map(b => ({ ...b }));
+                parametricBands = profile.bands.map((b) => ({ ...b }));
                 applyBandsToAudio(parametricBands);
                 renderBandControls(parametricBands);
                 computeCorrectedCurve();
@@ -3214,7 +3357,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             const id = 'peq_' + Date.now();
             profiles[id] = {
                 name,
-                bands: parametricBands.map(b => ({ ...b })),
+                bands: parametricBands.map((b) => ({ ...b })),
                 bandCount: parametricBands.length,
                 preamp: equalizerSettings.getPreamp(),
                 createdAt: Date.now(),
@@ -3240,7 +3383,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             const lines = [`Preamp: ${preamp.toFixed(1)} dB`];
             parametricBands.forEach((band, i) => {
                 const ft = band.type === 'lowshelf' ? 'LS' : band.type === 'highshelf' ? 'HS' : 'PK';
-                lines.push(`Filter ${i + 1}: ON ${ft} Fc ${Math.round(band.freq)} Hz Gain ${band.gain.toFixed(1)} dB Q ${band.q.toFixed(2)}`);
+                lines.push(
+                    `Filter ${i + 1}: ON ${ft} Fc ${Math.round(band.freq)} Hz Gain ${band.gain.toFixed(1)} dB Q ${band.q.toFixed(2)}`
+                );
             });
             const text = lines.join('\n');
             const blob = new Blob([text], { type: 'text/plain' });
@@ -3267,10 +3412,23 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     const lines = text.split('\n');
                     for (const line of lines) {
                         const preampMatch = line.match(/Preamp:\s*([-\d.]+)\s*dB/i);
-                        if (preampMatch) { preamp = parseFloat(preampMatch[1]); continue; }
-                        const filterMatch = line.match(/Filter\s+\d+:\s*ON\s+(\w+)\s+Fc\s+([\d.]+)\s*Hz\s+Gain\s+([-\d.]+)\s*dB\s+Q\s+([\d.]+)/i);
+                        if (preampMatch) {
+                            preamp = parseFloat(preampMatch[1]);
+                            continue;
+                        }
+                        const filterMatch = line.match(
+                            /Filter\s+\d+:\s*ON\s+(\w+)\s+Fc\s+([\d.]+)\s*Hz\s+Gain\s+([-\d.]+)\s*dB\s+Q\s+([\d.]+)/i
+                        );
                         if (filterMatch) {
-                            const typeMap = { PK: 'peaking', LS: 'lowshelf', LSC: 'lowshelf', LSF: 'lowshelf', HS: 'highshelf', HSC: 'highshelf', HSF: 'highshelf' };
+                            const typeMap = {
+                                PK: 'peaking',
+                                LS: 'lowshelf',
+                                LSC: 'lowshelf',
+                                LSF: 'lowshelf',
+                                HS: 'highshelf',
+                                HSC: 'highshelf',
+                                HSF: 'highshelf',
+                            };
                             bands.push({
                                 id: bands.length,
                                 type: typeMap[filterMatch[1].toUpperCase()] || 'peaking',
@@ -3329,7 +3487,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         if (!speakerChannelTabsEl) return;
         const ids = SPEAKER_CONFIGS[speakerConfig];
         speakerChannelTabsEl.innerHTML = '';
-        ids.forEach(id => {
+        ids.forEach((id) => {
             const btn = document.createElement('button');
             btn.className = 'speaker-channel-tab' + (id === speakerActiveChannel ? ' active' : '');
             btn.textContent = id;
@@ -3412,7 +3570,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     if (speakerMeasureBtn) {
         speakerMeasureBtn.addEventListener('click', async () => {
             speakerMeasureBtn.disabled = true;
-            if (speakerMeasStatus) { speakerMeasStatus.textContent = 'Requesting mic...'; speakerMeasStatus.classList.remove('loaded'); }
+            if (speakerMeasStatus) {
+                speakerMeasStatus.textContent = 'Requesting mic...';
+                speakerMeasStatus.classList.remove('loaded');
+            }
 
             let measCtx, stream;
             try {
@@ -3430,15 +3591,21 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 const buffer = measCtx.createBuffer(1, bufLen, sr);
                 const data = buffer.getChannelData(0);
                 // Paul Kellet's refined pink noise filter coefficients
-                let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+                let b0 = 0,
+                    b1 = 0,
+                    b2 = 0,
+                    b3 = 0,
+                    b4 = 0,
+                    b5 = 0,
+                    b6 = 0;
                 for (let i = 0; i < bufLen; i++) {
                     const white = Math.random() * 2 - 1;
                     b0 = 0.99886 * b0 + white * 0.0555179;
                     b1 = 0.99332 * b1 + white * 0.0750759;
-                    b2 = 0.96900 * b2 + white * 0.1538520;
-                    b3 = 0.86650 * b3 + white * 0.3104856;
-                    b4 = 0.55000 * b4 + white * 0.5329522;
-                    b5 = -0.7616 * b5 - white * 0.0168980;
+                    b2 = 0.969 * b2 + white * 0.153852;
+                    b3 = 0.8665 * b3 + white * 0.3104856;
+                    b4 = 0.55 * b4 + white * 0.5329522;
+                    b5 = -0.7616 * b5 - white * 0.016898;
                     let pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
                     b6 = white * 0.115926;
                     // Fade in/out envelope (100ms)
@@ -3474,7 +3641,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 await new Promise((resolve) => {
                     const tick = () => {
                         const elapsed = measCtx.currentTime - startTime;
-                        if (elapsed >= duration) { resolve(); return; }
+                        if (elapsed >= duration) {
+                            resolve();
+                            return;
+                        }
 
                         // Update progress
                         const pct = Math.round((elapsed / duration) * 100);
@@ -3509,18 +3679,22 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                         // Average a few bins around target for smoothing
                         const lo = Math.max(0, binIdx - 2);
                         const hi = Math.min(freqBinCount - 1, binIdx + 2);
-                        let sum = 0, cnt = 0;
-                        for (let k = lo; k <= hi; k++) { sum += accumulator[k]; cnt++; }
+                        let sum = 0,
+                            cnt = 0;
+                        for (let k = lo; k <= hi; k++) {
+                            sum += accumulator[k];
+                            cnt++;
+                        }
                         points.push({ freq, gain: sum / cnt });
                     }
                     freq *= Math.pow(2, 1 / ptsPerOctave);
                 }
 
                 // Normalize: midrange (500-2000 Hz) average → 75 dB
-                const midPts = points.filter(p => p.freq >= 500 && p.freq <= 2000);
+                const midPts = points.filter((p) => p.freq >= 500 && p.freq <= 2000);
                 const midAvg = midPts.length > 0 ? midPts.reduce((s, p) => s + p.gain, 0) / midPts.length : 0;
                 const offset = 75 - midAvg;
-                const normalized = points.map(p => ({ freq: p.freq, gain: p.gain + offset }));
+                const normalized = points.map((p) => ({ freq: p.freq, gain: p.gain + offset }));
 
                 // 7. Store result
                 getSpeakerChannel().measurement = normalized;
@@ -3529,13 +3703,13 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 computeCorrectedCurve();
                 drawAutoEQGraph();
                 if (speakerMeasStatus) speakerMeasStatus.textContent = `${normalized.length} pts (measured)`;
-
             } catch (err) {
                 console.error('[Speaker Measure]', err);
-                if (speakerMeasStatus) speakerMeasStatus.textContent = err.name === 'NotAllowedError' ? 'Mic denied' : 'Measure failed';
+                if (speakerMeasStatus)
+                    speakerMeasStatus.textContent = err.name === 'NotAllowedError' ? 'Mic denied' : 'Measure failed';
             } finally {
                 // Cleanup
-                if (stream) stream.getTracks().forEach(t => t.stop());
+                if (stream) stream.getTracks().forEach((t) => t.stop());
                 if (measCtx && measCtx.state !== 'closed') measCtx.close().catch(() => {});
                 speakerMeasureBtn.disabled = false;
             }
@@ -3548,7 +3722,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         speakerMeasureAllBtn.addEventListener('click', async () => {
             speakerMeasureAllBtn.disabled = true;
             if (speakerMeasureBtn) speakerMeasureBtn.disabled = true;
-            if (speakerMeasStatus) { speakerMeasStatus.textContent = 'Requesting mic...'; speakerMeasStatus.classList.remove('loaded'); }
+            if (speakerMeasStatus) {
+                speakerMeasStatus.textContent = 'Requesting mic...';
+                speakerMeasStatus.classList.remove('loaded');
+            }
 
             let measCtx, stream;
             try {
@@ -3564,15 +3741,21 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 const bufLen = sr * duration;
                 const buffer = measCtx.createBuffer(1, bufLen, sr);
                 const d = buffer.getChannelData(0);
-                let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+                let b0 = 0,
+                    b1 = 0,
+                    b2 = 0,
+                    b3 = 0,
+                    b4 = 0,
+                    b5 = 0,
+                    b6 = 0;
                 for (let i = 0; i < bufLen; i++) {
                     const white = Math.random() * 2 - 1;
                     b0 = 0.99886 * b0 + white * 0.0555179;
                     b1 = 0.99332 * b1 + white * 0.0750759;
-                    b2 = 0.96900 * b2 + white * 0.1538520;
-                    b3 = 0.86650 * b3 + white * 0.3104856;
-                    b4 = 0.55000 * b4 + white * 0.5329522;
-                    b5 = -0.7616 * b5 - white * 0.0168980;
+                    b2 = 0.969 * b2 + white * 0.153852;
+                    b3 = 0.8665 * b3 + white * 0.3104856;
+                    b4 = 0.55 * b4 + white * 0.5329522;
+                    b5 = -0.7616 * b5 - white * 0.016898;
                     let pink = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
                     b6 = white * 0.115926;
                     let env = 1;
@@ -3604,7 +3787,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 await new Promise((resolve) => {
                     const tick = () => {
                         const elapsed = measCtx.currentTime - startTime;
-                        if (elapsed >= duration) { resolve(); return; }
+                        if (elapsed >= duration) {
+                            resolve();
+                            return;
+                        }
                         const pct = Math.round((elapsed / duration) * 100);
                         if (speakerMeasStatus) speakerMeasStatus.textContent = `Measuring all... ${pct}%`;
                         if (elapsed > 0.3) {
@@ -3633,35 +3819,40 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     if (binIdx >= 0 && binIdx < freqBinCount) {
                         const lo = Math.max(0, binIdx - 2);
                         const hi = Math.min(freqBinCount - 1, binIdx + 2);
-                        let sum = 0, cnt = 0;
-                        for (let k = lo; k <= hi; k++) { sum += accumulator[k]; cnt++; }
+                        let sum = 0,
+                            cnt = 0;
+                        for (let k = lo; k <= hi; k++) {
+                            sum += accumulator[k];
+                            cnt++;
+                        }
                         points.push({ freq, gain: sum / cnt });
                     }
                     freq *= Math.pow(2, 1 / ptsPerOctave);
                 }
 
-                const midPts = points.filter(p => p.freq >= 500 && p.freq <= 2000);
+                const midPts = points.filter((p) => p.freq >= 500 && p.freq <= 2000);
                 const midAvg = midPts.length > 0 ? midPts.reduce((s, p) => s + p.gain, 0) / midPts.length : 0;
                 const offset = 75 - midAvg;
-                const normalized = points.map(p => ({ freq: p.freq, gain: p.gain + offset }));
+                const normalized = points.map((p) => ({ freq: p.freq, gain: p.gain + offset }));
 
                 // Assign to ALL active channels
                 const activeIds = SPEAKER_CONFIGS[speakerConfig];
-                activeIds.forEach(id => {
-                    speakerChannels[id].measurement = normalized.map(p => ({ ...p }));
+                activeIds.forEach((id) => {
+                    speakerChannels[id].measurement = normalized.map((p) => ({ ...p }));
                 });
 
                 updateSpeakerUI();
                 renderSpeakerChannelTabs();
                 computeCorrectedCurve();
                 drawAutoEQGraph();
-                if (speakerMeasStatus) speakerMeasStatus.textContent = `${normalized.length} pts → ${activeIds.length} channels`;
-
+                if (speakerMeasStatus)
+                    speakerMeasStatus.textContent = `${normalized.length} pts → ${activeIds.length} channels`;
             } catch (err) {
                 console.error('[Speaker Measure All]', err);
-                if (speakerMeasStatus) speakerMeasStatus.textContent = err.name === 'NotAllowedError' ? 'Mic denied' : 'Measure failed';
+                if (speakerMeasStatus)
+                    speakerMeasStatus.textContent = err.name === 'NotAllowedError' ? 'Mic denied' : 'Measure failed';
             } finally {
-                if (stream) stream.getTracks().forEach(t => t.stop());
+                if (stream) stream.getTracks().forEach((t) => t.stop());
                 if (measCtx && measCtx.state !== 'closed') measCtx.close().catch(() => {});
                 speakerMeasureAllBtn.disabled = false;
                 if (speakerMeasureBtn) speakerMeasureBtn.disabled = false;
@@ -3674,7 +3865,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     if (speakerAutoEqAllBtn) {
         speakerAutoEqAllBtn.addEventListener('click', () => {
             const activeIds = SPEAKER_CONFIGS[speakerConfig];
-            const measuredIds = activeIds.filter(id => speakerChannels[id].measurement);
+            const measuredIds = activeIds.filter((id) => speakerChannels[id].measurement);
             if (measuredIds.length === 0) return;
 
             speakerAutoEqAllBtn.disabled = true;
@@ -3686,9 +3877,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 const bassCut = speakerBassCutoff ? parseInt(speakerBassCutoff.value, 10) : 40;
                 const roomLim = speakerRoomLimit ? parseInt(speakerRoomLimit.value, 10) : 500;
 
-                measuredIds.forEach(id => {
+                measuredIds.forEach((id) => {
                     const ch = speakerChannels[id];
-                    const targetEntry = SPEAKER_TARGETS.find(t => t.id === ch.targetId);
+                    const targetEntry = SPEAKER_TARGETS.find((t) => t.id === ch.targetId);
                     const targetData = targetEntry?.data || [];
 
                     const bands = runAutoEqAlgorithm(ch.measurement, targetData, bandCount, roomLim, bassCut, 3.0);
@@ -3696,7 +3887,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     let maxGain = 0;
                     for (let f = 20; f <= 20000; f *= 1.1) {
                         let total = 0;
-                        bands.forEach(b => { if (b.enabled) total += calculateBiquadResponse(f, b); });
+                        bands.forEach((b) => {
+                            if (b.enabled) total += calculateBiquadResponse(f, b);
+                        });
                         if (total > maxGain) maxGain = total;
                     }
                     ch.bands = bands;
@@ -3715,7 +3908,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 speakerAutoEqAllBtn.disabled = false;
                 if (speakerAutoEqBtn) speakerAutoEqBtn.disabled = !ch.measurement;
                 if (speakerEqStatus) speakerEqStatus.textContent = `${measuredIds.length} channels optimized`;
-                setTimeout(() => { if (speakerEqStatus) speakerEqStatus.textContent = ''; }, 3000);
+                setTimeout(() => {
+                    if (speakerEqStatus) speakerEqStatus.textContent = '';
+                }, 3000);
             }, 100);
         });
     }
@@ -3740,11 +3935,15 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 if (data.length === 0) return;
                 const customId = 'custom_speaker_target';
                 const label = file.name.replace(/\.(txt|csv)$/i, '');
-                const existing = SPEAKER_TARGETS.findIndex(t => t.id === customId);
+                const existing = SPEAKER_TARGETS.findIndex((t) => t.id === customId);
                 if (existing > -1) SPEAKER_TARGETS[existing] = { id: customId, label, data };
                 else SPEAKER_TARGETS.push({ id: customId, label, data });
                 let opt = speakerTargetSelect.querySelector('option[value="custom_speaker_target"]');
-                if (!opt) { opt = document.createElement('option'); opt.value = customId; speakerTargetSelect.appendChild(opt); }
+                if (!opt) {
+                    opt = document.createElement('option');
+                    opt.value = customId;
+                    speakerTargetSelect.appendChild(opt);
+                }
                 opt.textContent = label;
                 speakerTargetSelect.value = customId;
                 getSpeakerChannel().targetId = customId;
@@ -3785,20 +3984,30 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             if (speakerEqStatus) speakerEqStatus.textContent = 'Running...';
 
             setTimeout(() => {
-                const targetEntry = SPEAKER_TARGETS.find(t => t.id === ch.targetId);
+                const targetEntry = SPEAKER_TARGETS.find((t) => t.id === ch.targetId);
                 const targetData = targetEntry?.data || [];
                 const bandCount = speakerBandCountSelect ? parseInt(speakerBandCountSelect.value, 10) : 10;
                 const bassCut = speakerBassCutoff ? parseInt(speakerBassCutoff.value, 10) : 40;
                 const roomLim = speakerRoomLimit ? parseInt(speakerRoomLimit.value, 10) : 500;
 
                 const sampleRate = autoeqSampleRate ? parseInt(autoeqSampleRate.value, 10) : 48000;
-                const bands = runAutoEqAlgorithm(ch.measurement, targetData, bandCount, roomLim, bassCut, 3.0, sampleRate);
+                const bands = runAutoEqAlgorithm(
+                    ch.measurement,
+                    targetData,
+                    bandCount,
+                    roomLim,
+                    bassCut,
+                    3.0,
+                    sampleRate
+                );
 
                 // Auto preamp
                 let maxGain = 0;
                 for (let f = 20; f <= 20000; f *= 1.1) {
                     let total = 0;
-                    bands.forEach(b => { if (b.enabled) total += calculateBiquadResponse(f, b, sampleRate); });
+                    bands.forEach((b) => {
+                        if (b.enabled) total += calculateBiquadResponse(f, b, sampleRate);
+                    });
                     if (total > maxGain) maxGain = total;
                 }
                 const autoPreamp = maxGain > 0 ? parseFloat((-maxGain - 0.1).toFixed(1)) : 0;
@@ -3815,7 +4024,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
                 speakerAutoEqBtn.disabled = false;
                 if (speakerEqStatus) speakerEqStatus.textContent = `${speakerActiveChannel} optimized`;
-                setTimeout(() => { if (speakerEqStatus) speakerEqStatus.textContent = ''; }, 3000);
+                setTimeout(() => {
+                    if (speakerEqStatus) speakerEqStatus.textContent = '';
+                }, 3000);
             }, 100);
         });
     }
@@ -3826,15 +4037,20 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             const activeIds = SPEAKER_CONFIGS[speakerConfig];
             const data = {
                 config: speakerConfig,
-                channels: activeIds.map(id => {
+                channels: activeIds.map((id) => {
                     const ch = speakerChannels[id];
                     return {
                         id,
                         label: SPEAKER_CHANNEL_LABELS[id],
                         preamp: ch.preamp,
-                        filters: ch.bands.filter(b => b.enabled).map(b => ({
-                            type: b.type, freq: b.freq, gain: b.gain, q: b.q,
-                        })),
+                        filters: ch.bands
+                            .filter((b) => b.enabled)
+                            .map((b) => ({
+                                type: b.type,
+                                freq: b.freq,
+                                gain: b.gain,
+                                q: b.q,
+                            })),
                     };
                 }),
             };
@@ -3868,10 +4084,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     if (speakerConfigSelect) speakerConfigSelect.value = speakerConfig;
                 }
                 // Load channels
-                data.channels.forEach(ch => {
+                data.channels.forEach((ch) => {
                     if (speakerChannels[ch.id]) {
                         speakerChannels[ch.id].preamp = ch.preamp || 0;
-                        speakerChannels[ch.id].bands = ch.filters.map(f => ({
+                        speakerChannels[ch.id].bands = ch.filters.map((f) => ({
                             enabled: true,
                             type: f.type,
                             freq: f.freq,
@@ -3915,7 +4131,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 }
                 localStorage.removeItem('speaker-eq-profiles');
             }
-        } catch { /* ignore migration errors */ }
+        } catch {
+            /* ignore migration errors */
+        }
         try {
             _speakerProfilesCache = (await db.getSetting(SPEAKER_PROFILES_IDB_KEY)) || {};
         } catch {
@@ -3943,7 +4161,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
         if (keys.length === 0) return;
 
-        keys.forEach(id => {
+        keys.forEach((id) => {
             const profile = profiles[id];
             const card = document.createElement('div');
             card.className = 'autoeq-profile-card' + (id === activeId ? ' active' : '');
@@ -3972,7 +4190,8 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 const all = getSpeakerProfiles();
                 delete all[id];
                 await saveSpeakerProfiles(all);
-                if (localStorage.getItem(SPEAKER_ACTIVE_PROFILE_KEY) === id) localStorage.removeItem(SPEAKER_ACTIVE_PROFILE_KEY);
+                if (localStorage.getItem(SPEAKER_ACTIVE_PROFILE_KEY) === id)
+                    localStorage.removeItem(SPEAKER_ACTIVE_PROFILE_KEY);
                 renderSpeakerProfiles();
             });
             card.appendChild(delBtn);
@@ -3988,8 +4207,13 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             requestAnimationFrame(() => {
                 const firstCh = profile.channels?.[0];
                 if (firstCh && firstCh.measurementPreview) {
-                    const targetEntry = SPEAKER_TARGETS.find(t => t.id === (firstCh.targetId || 'harman_room'));
-                    drawMiniGraph(preview, firstCh.measurementPreview, targetEntry?.data ? downsampleCurve(targetEntry.data) : null, firstCh.correctedPreview || null);
+                    const targetEntry = SPEAKER_TARGETS.find((t) => t.id === (firstCh.targetId || 'harman_room'));
+                    drawMiniGraph(
+                        preview,
+                        firstCh.measurementPreview,
+                        targetEntry?.data ? downsampleCurve(targetEntry.data) : null,
+                        firstCh.correctedPreview || null
+                    );
                 }
             });
         });
@@ -4008,12 +4232,14 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
         // Load all channels
         if (profile.channels) {
-            profile.channels.forEach(saved => {
+            profile.channels.forEach((saved) => {
                 if (speakerChannels[saved.id]) {
                     speakerChannels[saved.id].measurement = saved.measurement || null;
                     speakerChannels[saved.id].targetId = saved.targetId || 'harman_room';
                     speakerChannels[saved.id].preamp = saved.preamp || 0;
-                    speakerChannels[saved.id].bands = saved.bands ? saved.bands.map(b => ({ ...b })) : speakerChannels[saved.id].bands;
+                    speakerChannels[saved.id].bands = saved.bands
+                        ? saved.bands.map((b) => ({ ...b }))
+                        : speakerChannels[saved.id].bands;
                 }
             });
         }
@@ -4030,7 +4256,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         localStorage.setItem(SPEAKER_ACTIVE_PROFILE_KEY, profileId);
         renderSpeakerProfiles();
         if (speakerEqStatus) speakerEqStatus.textContent = `Loaded "${profile.name}"`;
-        setTimeout(() => { if (speakerEqStatus) speakerEqStatus.textContent = ''; }, 2000);
+        setTimeout(() => {
+            if (speakerEqStatus) speakerEqStatus.textContent = '';
+        }, 2000);
     };
 
     // Save button
@@ -4047,16 +4275,21 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 profiles[id] = {
                     name,
                     config: speakerConfig,
-                    channels: activeIds.map(chId => {
+                    channels: activeIds.map((chId) => {
                         const ch = speakerChannels[chId];
                         return {
                             id: chId,
                             targetId: ch.targetId,
                             preamp: ch.preamp,
-                            bands: ch.bands.map(b => ({ ...b })),
-                            measurement: ch.measurement ? ch.measurement.map(p => ({ freq: p.freq, gain: parseFloat(p.gain.toFixed(1)) })) : null,
+                            bands: ch.bands.map((b) => ({ ...b })),
+                            measurement: ch.measurement
+                                ? ch.measurement.map((p) => ({ freq: p.freq, gain: parseFloat(p.gain.toFixed(1)) }))
+                                : null,
                             measurementPreview: ch.measurement ? downsampleCurve(ch.measurement) : null,
-                            correctedPreview: autoeqCorrectedCurve && chId === speakerActiveChannel ? downsampleCurve(autoeqCorrectedCurve) : null,
+                            correctedPreview:
+                                autoeqCorrectedCurve && chId === speakerActiveChannel
+                                    ? downsampleCurve(autoeqCorrectedCurve)
+                                    : null,
                         };
                     }),
                     createdAt: Date.now(),
@@ -4067,7 +4300,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 if (speakerProfileNameInput) speakerProfileNameInput.value = '';
                 renderSpeakerProfiles();
                 if (speakerEqStatus) speakerEqStatus.textContent = `Saved "${name}"`;
-                setTimeout(() => { if (speakerEqStatus) speakerEqStatus.textContent = ''; }, 2000);
+                setTimeout(() => {
+                    if (speakerEqStatus) speakerEqStatus.textContent = '';
+                }, 2000);
             } catch (err) {
                 console.error('[Speaker Save]', err);
                 if (speakerEqStatus) speakerEqStatus.textContent = `Save failed: ${err.message}`;
@@ -4095,7 +4330,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     if (addBandBtn) {
         addBandBtn.addEventListener('click', () => {
             let bands = getActiveBands();
-            if (!bands) { bands = []; setActiveBands(bands); }
+            if (!bands) {
+                bands = [];
+                setActiveBands(bands);
+            }
             if (bands.length >= 32) return;
             bands.push({ id: bands.length, type: 'peaking', freq: 1000, gain: 0, q: 1.0, enabled: true });
             applyBandsToAudio(bands);
@@ -4121,7 +4359,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         resetBandsBtn.addEventListener('click', () => {
             const bands = getActiveBands();
             if (!bands) return;
-            bands.forEach(b => { b.gain = 0; });
+            bands.forEach((b) => {
+                b.gain = 0;
+            });
             applyBandsToAudio(bands);
             renderBandControls(bands);
             computeCorrectedCurve();
@@ -4193,7 +4433,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         if (profiles[activeProfileId]) {
             // Restore state silently
             const profile = profiles[activeProfileId];
-            autoeqCurrentBands = profile.bands?.map(b => ({ ...b })) || null;
+            autoeqCurrentBands = profile.bands?.map((b) => ({ ...b })) || null;
             autoeqCorrectedCurve = profile.correctedData ? [...profile.correctedData] : null;
             autoeqSelectedMeasurement = profile.measurementData ? [...profile.measurementData] : null;
             autoeqSelectedEntry = { name: profile.headphoneName, type: profile.headphoneType };
@@ -4224,7 +4464,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         const parametricProfiles = getParametricProfiles();
         const paraProfile = parametricProfiles[activeParametricId];
         if (paraProfile && paraProfile.bands) {
-            parametricBands = paraProfile.bands.map(b => ({ ...b }));
+            parametricBands = paraProfile.bands.map((b) => ({ ...b }));
         }
     }
 
@@ -4239,12 +4479,14 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 if (speakerConfigSelect) speakerConfigSelect.value = speakerConfig;
             }
             if (spkProfile.channels) {
-                spkProfile.channels.forEach(saved => {
+                spkProfile.channels.forEach((saved) => {
                     if (speakerChannels[saved.id]) {
                         speakerChannels[saved.id].measurement = saved.measurement || null;
                         speakerChannels[saved.id].targetId = saved.targetId || 'harman_room';
                         speakerChannels[saved.id].preamp = saved.preamp || 0;
-                        speakerChannels[saved.id].bands = saved.bands ? saved.bands.map(b => ({ ...b })) : speakerChannels[saved.id].bands;
+                        speakerChannels[saved.id].bands = saved.bands
+                            ? saved.bands.map((b) => ({ ...b }))
+                            : speakerChannels[saved.id].bands;
                     }
                 });
             }

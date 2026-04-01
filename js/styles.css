@@ -7809,7 +7809,9 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
     line-height: 1.7;
 }
 
-.eq-howto-tab ol b { color: var(--foreground); }
+.eq-howto-tab ol b {
+    color: var(--foreground);
+}
 
 .eq-howto-tip {
     margin: var(--spacing-sm) 0 0;
@@ -7887,13 +7889,17 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
     display: inline-block;
 }
 
-.legend-original .legend-dot { background: #3b82f6; }
+.legend-original .legend-dot {
+    background: #3b82f6;
+}
 
 .legend-target .legend-dot {
     background: rgb(255 255 255 / 0.5);
     border: 1px dashed rgb(255 255 255 / 0.3);
 }
-.legend-corrected .legend-dot { background: #f472b6; }
+.legend-corrected .legend-dot {
+    background: #f472b6;
+}
 
 .autoeq-graph-wrapper {
     position: relative;
@@ -7937,7 +7943,6 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
     flex-direction: column;
     gap: var(--spacing-md);
 }
-
 
 .autoeq-control-group {
     display: flex;
@@ -8088,8 +8093,12 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
     font-style: italic;
 }
 
-.autoeq-status.error { color: var(--destructive); }
-.autoeq-status.success { color: var(--primary); }
+.autoeq-status.error {
+    color: var(--destructive);
+}
+.autoeq-status.success {
+    color: var(--primary);
+}
 
 /* --- Saved Profiles --- */
 .autoeq-saved-section {
@@ -8193,7 +8202,9 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
     border: 1px solid var(--border);
     border-radius: var(--radius-lg, 12px);
     cursor: pointer;
-    transition: background var(--transition-fast), border-color var(--transition-fast);
+    transition:
+        background var(--transition-fast),
+        border-color var(--transition-fast);
     position: relative;
     overflow: hidden;
 }
@@ -8902,7 +8913,7 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
     gap: var(--spacing-xs);
 }
 
-.speaker-eq-slider-row input[type="range"] {
+.speaker-eq-slider-row input[type='range'] {
     flex: 1;
 }
 
@@ -8914,10 +8925,18 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
     text-align: right;
 }
 
-.speaker-eq-slider-value.bass { color: #22d3ee; }
-.speaker-eq-slider-value.room { color: #f59e0b; }
-.speaker-eq-section .autoeq-control-label.bass { color: #22d3ee; }
-.speaker-eq-section .autoeq-control-label.room { color: #f59e0b; }
+.speaker-eq-slider-value.bass {
+    color: #22d3ee;
+}
+.speaker-eq-slider-value.room {
+    color: #f59e0b;
+}
+.speaker-eq-section .autoeq-control-label.bass {
+    color: #22d3ee;
+}
+.speaker-eq-section .autoeq-control-label.room {
+    color: #f59e0b;
+}
 
 .speaker-measure-btn {
     color: #f472b6;

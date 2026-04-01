@@ -241,7 +241,8 @@ class AudioContextManager {
             const filter = this.audioContext.createBiquadFilter();
             filter.type = (this.currentTypes && this.currentTypes[index]) || 'peaking';
             filter.frequency.value = freq;
-            filter.Q.value = (this.currentQs && this.currentQs[index] > 0) ? this.currentQs[index] : this._calculateQ(index);
+            filter.Q.value =
+                this.currentQs && this.currentQs[index] > 0 ? this.currentQs[index] : this._calculateQ(index);
             filter.gain.value = this.currentGains[index] || 0;
             return filter;
         });
@@ -414,7 +415,11 @@ class AudioContextManager {
                     this.monoGainNode = this.audioContext.createGain();
                     this.monoGainNode.gain.value = 0.5; // Reduce volume to prevent clipping when mixing
                 }
-                try { this.monoGainNode.disconnect(); } catch { /* not connected */ }
+                try {
+                    this.monoGainNode.disconnect();
+                } catch {
+                    /* not connected */
+                }
 
                 // Connect source to mono gain
                 this.source.connect(this.monoGainNode);
@@ -585,39 +590,47 @@ class AudioContextManager {
      */
     _biquadResponseDb(f, band, sr) {
         if (!band.enabled || !band.type) return 0;
-        const w = 2 * Math.PI * band.freq / sr;
-        const p = 2 * Math.PI * f / sr;
+        const w = (2 * Math.PI * band.freq) / sr;
+        const p = (2 * Math.PI * f) / sr;
         const s = Math.sin(w) / (2 * band.q);
         const A = Math.pow(10, band.gain / 40);
         const c = Math.cos(w);
         let b0, b1, b2, a0, a1, a2;
         const t = band.type[0];
         if (t === 'p') {
-            b0 = 1 + s * A; b1 = -2 * c; b2 = 1 - s * A;
-            a0 = 1 + s / A; a1 = -2 * c; a2 = 1 - s / A;
+            b0 = 1 + s * A;
+            b1 = -2 * c;
+            b2 = 1 - s * A;
+            a0 = 1 + s / A;
+            a1 = -2 * c;
+            a2 = 1 - s / A;
         } else if (t === 'l') {
             const sq = 2 * Math.sqrt(A) * s;
-            b0 = A * ((A + 1) - (A - 1) * c + sq);
-            b1 = 2 * A * ((A - 1) - (A + 1) * c);
-            b2 = A * ((A + 1) - (A - 1) * c - sq);
-            a0 = (A + 1) + (A - 1) * c + sq;
-            a1 = -2 * ((A - 1) + (A + 1) * c);
-            a2 = (A + 1) + (A - 1) * c - sq;
+            b0 = A * (A + 1 - (A - 1) * c + sq);
+            b1 = 2 * A * (A - 1 - (A + 1) * c);
+            b2 = A * (A + 1 - (A - 1) * c - sq);
+            a0 = A + 1 + (A - 1) * c + sq;
+            a1 = -2 * (A - 1 + (A + 1) * c);
+            a2 = A + 1 + (A - 1) * c - sq;
         } else if (t === 'h') {
             const sq = 2 * Math.sqrt(A) * s;
-            b0 = A * ((A + 1) + (A - 1) * c + sq);
-            b1 = -2 * A * ((A - 1) + (A + 1) * c);
-            b2 = A * ((A + 1) + (A - 1) * c - sq);
-            a0 = (A + 1) - (A - 1) * c + sq;
-            a1 = 2 * ((A - 1) - (A + 1) * c);
-            a2 = (A + 1) - (A - 1) * c - sq;
+            b0 = A * (A + 1 + (A - 1) * c + sq);
+            b1 = -2 * A * (A - 1 + (A + 1) * c);
+            b2 = A * (A + 1 + (A - 1) * c - sq);
+            a0 = A + 1 - (A - 1) * c + sq;
+            a1 = 2 * (A - 1 - (A + 1) * c);
+            a2 = A + 1 - (A - 1) * c - sq;
         } else {
             return 0;
         }
         const _a0 = 1 / a0;
-        const b0n = b0 * _a0, b1n = b1 * _a0, b2n = b2 * _a0;
-        const a1n = a1 * _a0, a2n = a2 * _a0;
-        const cp = Math.cos(p), c2p = Math.cos(2 * p);
+        const b0n = b0 * _a0,
+            b1n = b1 * _a0,
+            b2n = b2 * _a0;
+        const a1n = a1 * _a0,
+            a2n = a2 * _a0;
+        const cp = Math.cos(p),
+            c2p = Math.cos(2 * p);
         const n = b0n * b0n + b1n * b1n + b2n * b2n + 2 * (b0n * b1n + b1n * b2n) * cp + 2 * b0n * b2n * c2p;
         const d = 1 + a1n * a1n + a2n * a2n + 2 * (a1n + a1n * a2n) * cp + 2 * a2n * c2p;
         return 10 * Math.log10(n / d);
@@ -757,11 +770,8 @@ class AudioContextManager {
     applyAutoEQBands(bands, skipPreamp = false) {
         if (!bands || bands.length === 0) return '';
 
-        const enabledBands = bands.filter(b => b.enabled);
-        const count = Math.max(
-            equalizerSettings.MIN_BANDS,
-            Math.min(equalizerSettings.MAX_BANDS, enabledBands.length)
-        );
+        const enabledBands = bands.filter((b) => b.enabled);
+        const count = Math.max(equalizerSettings.MIN_BANDS, Math.min(equalizerSettings.MAX_BANDS, enabledBands.length));
 
         // Calculate preamp: negative of cumulative peak gain across all bands to prevent clipping
         let cumulativePeak = 0;
@@ -776,18 +786,22 @@ class AudioContextManager {
                 if (sum > cumulativePeak) cumulativePeak = sum;
             }
         }
-        const preamp = skipPreamp ? equalizerSettings.getPreamp() : (cumulativePeak > 0 ? -Math.round(cumulativePeak * 10) / 10 : 0);
+        const preamp = skipPreamp
+            ? equalizerSettings.getPreamp()
+            : cumulativePeak > 0
+              ? -Math.round(cumulativePeak * 10) / 10
+              : 0;
 
         // Sort bands by frequency so index order is deterministic
         const sortedBands = [...enabledBands].sort((a, b) => a.freq - b.freq);
 
         // Build normalized band descriptor arrays
-        const newFrequencies = sortedBands.slice(0, count).map(b =>
-            Math.round(Math.min(b.freq, (this.audioContext?.sampleRate ?? 48000) / 2 - 1))
-        );
-        const newTypes = sortedBands.slice(0, count).map(b => b.type || 'peaking');
-        const newQs = sortedBands.slice(0, count).map(b => b.q);
-        const newGains = sortedBands.slice(0, count).map(b => this._clampGain(b.gain));
+        const newFrequencies = sortedBands
+            .slice(0, count)
+            .map((b) => Math.round(Math.min(b.freq, (this.audioContext?.sampleRate ?? 48000) / 2 - 1)));
+        const newTypes = sortedBands.slice(0, count).map((b) => b.type || 'peaking');
+        const newQs = sortedBands.slice(0, count).map((b) => b.q);
+        const newGains = sortedBands.slice(0, count).map((b) => this._clampGain(b.gain));
 
         // Update band count via class setter to trigger equalizer-band-count-changed event
         if (count !== this.bandCount) {
@@ -822,7 +836,9 @@ class AudioContextManager {
         sortedBands.forEach((band, index) => {
             if (index >= count) return;
             const filterType = band.type === 'lowshelf' ? 'LS' : band.type === 'highshelf' ? 'HS' : 'PK';
-            lines.push(`Filter ${index + 1}: ON ${filterType} Fc ${newFrequencies[index]} Hz Gain ${newGains[index].toFixed(1)} dB Q ${newQs[index].toFixed(2)}`);
+            lines.push(
+                `Filter ${index + 1}: ON ${filterType} Fc ${newFrequencies[index]} Hz Gain ${newGains[index].toFixed(1)} dB Q ${newQs[index].toFixed(2)}`
+            );
         });
 
         return lines.join('\n');
@@ -841,9 +857,11 @@ class AudioContextManager {
             const gain = this.currentGains[index] || 0;
             const type = (this.currentTypes && this.currentTypes[index]) || 'peaking';
             const filterType = type === 'lowshelf' ? 'LS' : type === 'highshelf' ? 'HS' : 'PK';
-            const q = (this.currentQs && this.currentQs[index] > 0) ? this.currentQs[index] : this._calculateQ(index);
+            const q = this.currentQs && this.currentQs[index] > 0 ? this.currentQs[index] : this._calculateQ(index);
             const filterNum = index + 1;
-            lines.push(`Filter ${filterNum}: ON ${filterType} Fc ${freq} Hz Gain ${gain.toFixed(1)} dB Q ${q.toFixed(2)}`);
+            lines.push(
+                `Filter ${filterNum}: ON ${filterType} Fc ${freq} Hz Gain ${gain.toFixed(1)} dB Q ${q.toFixed(2)}`
+            );
         });
 
         return lines.join('\n');
@@ -903,11 +921,19 @@ class AudioContextManager {
 
             // Apply per-band frequencies, types, Qs, and gains from import
             const sliced = filters.slice(0, this.bandCount);
-            const typeMap = { PK: 'peaking', LS: 'lowshelf', LSC: 'lowshelf', LSF: 'lowshelf', HS: 'highshelf', HSC: 'highshelf', HSF: 'highshelf' };
-            this.frequencies = sliced.map(f => f.freq);
-            this.currentTypes = sliced.map(f => typeMap[f.type] || 'peaking');
-            this.currentQs = sliced.map(f => f.q);
-            this.currentGains = sliced.map(f => this._clampGain(f.gain));
+            const typeMap = {
+                PK: 'peaking',
+                LS: 'lowshelf',
+                LSC: 'lowshelf',
+                LSF: 'lowshelf',
+                HS: 'highshelf',
+                HSC: 'highshelf',
+                HSF: 'highshelf',
+            };
+            this.frequencies = sliced.map((f) => f.freq);
+            this.currentTypes = sliced.map((f) => typeMap[f.type] || 'peaking');
+            this.currentQs = sliced.map((f) => f.q);
+            this.currentGains = sliced.map((f) => this._clampGain(f.gain));
 
             // Rebuild EQ chain to apply new frequencies, types, and Qs
             if (this.isInitialized && this.audioContext) {

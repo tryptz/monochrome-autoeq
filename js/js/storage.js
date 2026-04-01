@@ -1560,11 +1560,14 @@ export const equalizerSettings = {
      */
     setLastHeadphone(entry, measurementData) {
         try {
-            localStorage.setItem(this.AUTOEQ_LAST_HEADPHONE_KEY, JSON.stringify({
-                entry,
-                measurementData,
-                savedAt: Date.now(),
-            }));
+            localStorage.setItem(
+                this.AUTOEQ_LAST_HEADPHONE_KEY,
+                JSON.stringify({
+                    entry,
+                    measurementData,
+                    savedAt: Date.now(),
+                })
+            );
         } catch (e) {
             console.warn('[AutoEQ] Failed to save last headphone:', e);
         }
