@@ -3,8 +3,8 @@
 // Iterative peak-flattening parametric EQ optimization
 
 // Constants
-const MAX_BOOST = 12.0;
-const MAX_CUT = 12.0;
+const MAX_BOOST = 30.0;
+const MAX_CUT = 30.0;
 const MIN_Q = 0.6;
 const DEFAULT_SR = 48000;
 const PI = Math.PI;
@@ -181,6 +181,19 @@ function runAutoEqAlgorithm(measurement, target, bandCount, maxFreq = 16000, min
         if (gain > 0 && q > 2.0) q = 2.0;
 
         const newBand = { id: i, type: 'peaking', freq: peakFreq, gain, q, enabled: true };
+
+        // Check cumulative gain at the peak frequency across all existing bands + this one
+        let cumulativeGain = gain;
+        for (const existing of out) {
+            cumulativeGain += calculateBiquadResponse(peakFreq, existing, sampleRate);
+        }
+        // If cumulative boost exceeds safe limits, reduce this band's gain
+        const cumulativeLimit = MAX_BOOST;
+        if (cumulativeGain > cumulativeLimit) {
+            newBand.gain = gain - (cumulativeGain - cumulativeLimit);
+            if (newBand.gain < 0.2) continue;
+        }
+
         out.push(newBand);
 
         // Update error curve by applying the new band's response

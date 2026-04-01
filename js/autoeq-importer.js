@@ -3,20 +3,32 @@
 // Provides access to 4000+ headphone measurement profiles
 
 import { parseRawData } from './autoeq-data.js';
+import { db } from './db.js';
 
-const CACHE_KEY = 'monochrome_autoeq_index_v3';
+const CACHE_KEY = 'autoeq_index_v4';
+const OLD_LS_CACHE_KEY = 'monochrome_autoeq_index_v4';
 const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
-// Static fallback list in case GitHub API fails
+// 5 most popular headphones — pre-loaded as defaults and shown in the headphone select
+// All measured on Rtings B&K 5128 rig for consistency
+const POPULAR_HEADPHONES = [
+    { name: 'Sony WH-1000XM5 (Rtings)', type: 'over-ear', path: 'Rtings/Bruel & Kjaer 5128 over-ear/Sony WH-1000XM5', fileName: 'Sony WH-1000XM5.csv' },
+    { name: 'Apple AirPods Pro2 (Rtings)', type: 'in-ear', path: 'Rtings/Bruel & Kjaer 5128 in-ear/Apple AirPods Pro2', fileName: 'Apple AirPods Pro2.csv' },
+    { name: 'Sony WF-1000XM5 (Rtings)', type: 'in-ear', path: 'Rtings/Bruel & Kjaer 5128 in-ear/Sony WF-1000XM5', fileName: 'Sony WF-1000XM5.csv' },
+    { name: 'Samsung Galaxy Buds3 Pro (Rtings)', type: 'in-ear', path: 'Rtings/Bruel & Kjaer 5128 in-ear/Samsung Galaxy Buds3 Pro', fileName: 'Samsung Galaxy Buds3 Pro.csv' },
+    { name: 'Sennheiser HD 600 (Rtings)', type: 'over-ear', path: 'Rtings/Bruel & Kjaer 5128 over-ear/Sennheiser HD 600', fileName: 'Sennheiser HD 600.csv' },
+];
+
+// Static fallback list in case GitHub API fails — popular picks + additional well-known models
 const FALLBACK_INDEX = [
-    { name: 'Sennheiser HD 600 (crinacle)', type: 'over-ear', path: 'crinacle/gras_43ag-7_harman_over-ear_2018/Sennheiser HD 600', fileName: 'Sennheiser HD 600.csv' },
-    { name: 'Sennheiser HD 650 (crinacle)', type: 'over-ear', path: 'crinacle/gras_43ag-7_harman_over-ear_2018/Sennheiser HD 650', fileName: 'Sennheiser HD 650.csv' },
-    { name: 'Sennheiser HD 800 S (crinacle)', type: 'over-ear', path: 'crinacle/gras_43ag-7_harman_over-ear_2018/Sennheiser HD 800 S', fileName: 'Sennheiser HD 800 S.csv' },
-    { name: 'Beyerdynamic DT 770 Pro 80 Ohm (oratory1990)', type: 'over-ear', path: 'oratory1990/harman_over-ear_2018/Beyerdynamic DT 770 Pro 80 Ohm', fileName: 'Beyerdynamic DT 770 Pro 80 Ohm.csv' },
-    { name: 'Moondrop Blessing 2 Dusk (crinacle)', type: 'in-ear', path: 'crinacle/harman_in-ear_2019v2/Moondrop Blessing 2 Dusk', fileName: 'Moondrop Blessing 2 Dusk.csv' },
-    { name: 'Apple AirPods Pro 2 (crinacle)', type: 'in-ear', path: 'crinacle/harman_in-ear_2019v2/Apple AirPods Pro 2', fileName: 'Apple AirPods Pro 2.csv' },
-    { name: 'Sony WH-1000XM5 (crinacle)', type: 'over-ear', path: 'crinacle/gras_43ag-7_harman_over-ear_2018/Sony WH-1000XM5', fileName: 'Sony WH-1000XM5.csv' },
-    { name: 'HiFiMAN Sundara (oratory1990)', type: 'over-ear', path: 'oratory1990/harman_over-ear_2018/HiFiMAN Sundara', fileName: 'HiFiMAN Sundara.csv' },
+    ...POPULAR_HEADPHONES,
+    { name: 'Sennheiser HD 600 (Filk)', type: 'over-ear', path: 'Filk/over-ear/Sennheiser HD 600', fileName: 'Sennheiser HD 600.csv' },
+    { name: 'Sennheiser HD 600 (Innerfidelity)', type: 'over-ear', path: 'Innerfidelity/over-ear/Sennheiser HD 600', fileName: 'Sennheiser HD 600.csv' },
+    { name: 'Samsung Galaxy Buds2 Pro (Rtings)', type: 'in-ear', path: 'Rtings/Bruel & Kjaer 5128 in-ear/Samsung Galaxy Buds2 Pro', fileName: 'Samsung Galaxy Buds2 Pro.csv' },
+    { name: 'Sony WF-1000XM5 (Kazi)', type: 'in-ear', path: 'Kazi/in-ear/Sony WF-1000XM5', fileName: 'Sony WF-1000XM5.csv' },
+    { name: 'Samsung Galaxy Buds3 Pro (DHRME)', type: 'in-ear', path: 'DHRME/in-ear/Samsung Galaxy Buds3 Pro', fileName: 'Samsung Galaxy Buds3 Pro.csv' },
+    { name: 'Apple AirPods Pro (Super Review)', type: 'in-ear', path: 'Super Review/in-ear/Apple AirPods Pro', fileName: 'Apple AirPods Pro.csv' },
+    { name: 'Sennheiser HD 600 (2020) (Kuulokenurkka)', type: 'over-ear', path: 'Kuulokenurkka/over-ear/Sennheiser HD 600 (2020)', fileName: 'Sennheiser HD 600 (2020).csv' },
 ];
 
 /**
@@ -26,14 +38,16 @@ const FALLBACK_INDEX = [
  * @returns {Promise<Array<{name: string, type: string, path: string, fileName: string}>>}
  */
 async function fetchAutoEqIndex() {
-    // 1. Try loading from cache
+    // Migrate: remove old localStorage cache to free quota
+    try { localStorage.removeItem(OLD_LS_CACHE_KEY); } catch { /* ignore */ }
+
+    // 1. Try loading from IndexedDB cache
     try {
-        const cachedRaw = localStorage.getItem(CACHE_KEY);
-        if (cachedRaw) {
-            const { timestamp, data } = JSON.parse(cachedRaw);
-            if (Date.now() - timestamp < CACHE_EXPIRY) {
+        const cached = await db.getSetting(CACHE_KEY);
+        if (cached && cached.timestamp && cached.data) {
+            if (Date.now() - cached.timestamp < CACHE_EXPIRY) {
                 console.log('[AutoEQ] Loaded index from cache');
-                return data;
+                return cached.data;
             }
         }
     } catch (e) {
@@ -53,11 +67,13 @@ async function fetchAutoEqIndex() {
         }
 
         if (!response.ok) {
-            const cachedRaw = localStorage.getItem(CACHE_KEY);
-            if (cachedRaw) {
-                console.warn('[AutoEQ] GitHub API limit reached. Using stale cache.');
-                return JSON.parse(cachedRaw).data;
-            }
+            try {
+                const cached = await db.getSetting(CACHE_KEY);
+                if (cached?.data) {
+                    console.warn('[AutoEQ] GitHub API limit reached. Using stale cache.');
+                    return cached.data;
+                }
+            } catch { /* ignore */ }
             console.warn('[AutoEQ] GitHub API error. Using fallback.');
             return FALLBACK_INDEX;
         }
@@ -110,29 +126,25 @@ async function fetchAutoEqIndex() {
 
         const sortedEntries = entries.sort((a, b) => a.name.localeCompare(b.name));
 
-        // 3. Save to cache
+        // 3. Save to IndexedDB cache
         try {
-            localStorage.setItem(CACHE_KEY, JSON.stringify({
+            await db.saveSetting(CACHE_KEY, {
                 timestamp: Date.now(),
                 data: sortedEntries,
-            }));
+            });
             console.log(`[AutoEQ] Cached ${sortedEntries.length} entries`);
         } catch (e) {
-            console.warn('[AutoEQ] Failed to save cache (storage full?)', e);
+            console.warn('[AutoEQ] Failed to save cache:', e);
         }
 
         return sortedEntries;
     } catch (err) {
         if (err.name === 'AbortError') {
             console.warn('[AutoEQ] GitHub API request timed out. Falling back to cache or fallback index.');
-            const cachedRaw = localStorage.getItem(CACHE_KEY);
-            if (cachedRaw) {
-                try {
-                    return JSON.parse(cachedRaw).data;
-                } catch {
-                    /* ignore parse error */
-                }
-            }
+            try {
+                const cached = await db.getSetting(CACHE_KEY);
+                if (cached?.data) return cached.data;
+            } catch { /* ignore */ }
         } else {
             console.error('[AutoEQ] Failed to fetch index:', err);
         }
@@ -204,4 +216,4 @@ function searchHeadphones(query, entries, typeFilter = 'all', limit = 100) {
     return filtered.slice(0, limit);
 }
 
-export { fetchAutoEqIndex, fetchHeadphoneData, searchHeadphones };
+export { fetchAutoEqIndex, fetchHeadphoneData, searchHeadphones, POPULAR_HEADPHONES };

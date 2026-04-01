@@ -1542,6 +1542,49 @@ export const equalizerSettings = {
     setSampleRate(rate) {
         localStorage.setItem(this.AUTOEQ_SAMPLE_RATE_KEY, rate.toString());
     },
+
+    // ========================================
+    // Last Selected Headphone Persistence
+    // ========================================
+    AUTOEQ_LAST_HEADPHONE_KEY: 'autoeq-last-headphone',
+
+    /**
+     * Save the last selected headphone entry + its measurement data
+     * so it persists across page reloads without re-fetching from GitHub
+     * @param {object} entry - {name, type, path, fileName}
+     * @param {Array} measurementData - [{freq, gain}, ...]
+     */
+    setLastHeadphone(entry, measurementData) {
+        try {
+            localStorage.setItem(this.AUTOEQ_LAST_HEADPHONE_KEY, JSON.stringify({
+                entry,
+                measurementData,
+                savedAt: Date.now(),
+            }));
+        } catch (e) {
+            console.warn('[AutoEQ] Failed to save last headphone:', e);
+        }
+    },
+
+    /**
+     * Retrieve the last selected headphone entry + cached measurement data
+     * @returns {{entry: object, measurementData: Array}|null}
+     */
+    getLastHeadphone() {
+        try {
+            const stored = localStorage.getItem(this.AUTOEQ_LAST_HEADPHONE_KEY);
+            if (!stored) return null;
+            const parsed = JSON.parse(stored);
+            if (parsed && parsed.entry && parsed.measurementData) return parsed;
+            return null;
+        } catch {
+            return null;
+        }
+    },
+
+    clearLastHeadphone() {
+        localStorage.removeItem(this.AUTOEQ_LAST_HEADPHONE_KEY);
+    },
 };
 
 export const monoAudioSettings = {

@@ -39,7 +39,7 @@ import {
 import { audioContextManager, getPresetsForBandCount } from './audio-context.js';
 import { calculateBiquadResponse, interpolate, getNormalizationOffset, runAutoEqAlgorithm } from './autoeq-engine.js';
 import { parseRawData, TARGETS, SPEAKER_TARGETS } from './autoeq-data.js';
-import { fetchAutoEqIndex, fetchHeadphoneData, searchHeadphones } from './autoeq-importer.js';
+import { fetchAutoEqIndex, fetchHeadphoneData, searchHeadphones, POPULAR_HEADPHONES } from './autoeq-importer.js';
 import { db } from './db.js';
 import { authManager } from './accounts/auth.js';
 import { syncManager } from './accounts/pocketbase.js';
@@ -1274,6 +1274,24 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const autoeqBandCount = document.getElementById('autoeq-band-count');
     const autoeqMaxFreq = document.getElementById('autoeq-max-freq');
     const autoeqSampleRate = document.getElementById('autoeq-sample-rate');
+
+    // Safely set band count dropdown, ensuring the value matches an available option
+    const setAutoeqBandCount = (count, bands) => {
+        if (!autoeqBandCount) return;
+        const val = String(count || (bands && bands.length) || 10);
+        autoeqBandCount.value = val;
+        // If value didn't match any option (dropdown shows blank), add it or fall back
+        if (autoeqBandCount.value !== val) {
+            // Try using actual band count from the bands array
+            if (bands && bands.length) {
+                const bandsVal = String(bands.length);
+                autoeqBandCount.value = bandsVal;
+                if (autoeqBandCount.value === bandsVal) return;
+            }
+            // Fall back to default
+            autoeqBandCount.value = '10';
+        }
+    };
     const autoeqRunBtn = document.getElementById('autoeq-run-btn');
     const autoeqDownloadBtn = document.getElementById('autoeq-download-btn');
     const autoeqStatus = document.getElementById('autoeq-status');
@@ -1291,6 +1309,31 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const autoeqFiltersCollapse = document.getElementById('autoeq-filters-collapse');
     const autoeqBandsList = document.getElementById('autoeq-bands-list');
     const autoeqPreampValue = document.getElementById('autoeq-preamp-value');
+
+    // Populate headphone select with popular models
+    if (autoeqHeadphoneSelect) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = 'Popular';
+        for (const hp of POPULAR_HEADPHONES) {
+            const opt = document.createElement('option');
+            opt.value = hp.name;
+            opt.textContent = hp.name.replace(/\s*\([^)]*\)\s*$/, ''); // strip source suffix for clean display
+            opt.dataset.type = hp.type;
+            optgroup.appendChild(opt);
+        }
+        // Insert after the placeholder option
+        autoeqHeadphoneSelect.appendChild(optgroup);
+
+        // When user picks a popular headphone from the dropdown, load it
+        autoeqHeadphoneSelect.addEventListener('change', () => {
+            const selected = autoeqHeadphoneSelect.value;
+            if (!selected) return;
+            const popularEntry = POPULAR_HEADPHONES.find(hp => hp.name === selected);
+            if (popularEntry && (!autoeqSelectedEntry || autoeqSelectedEntry.name !== selected)) {
+                loadHeadphoneEntry(popularEntry);
+            }
+        });
+    }
 
     // ========================================
     // Frequency Response Graph Renderer
@@ -1746,7 +1789,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     /**
      * Auto preamp compensation state
      */
-    let autoPreampEnabled = true;
+    let autoPreampEnabled = false;
     const autoPreampToggle = document.getElementById('autoeq-auto-preamp-toggle');
 
     /**
@@ -1860,10 +1903,11 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
             // Scroll on a node = Q adjust
             const wBands = getActiveBands();
-            if (hoveredNode >= 0 && wBands) {
+            if (hoveredNode >= 0 && wBands && wBands[hoveredNode]) {
                 e.preventDefault();
+                const band = wBands[hoveredNode];
                 const delta = e.deltaY > 0 ? -0.15 : 0.15;
-                wBands[hoveredNode].q = Math.max(0.1, Math.min(10, wBands[hoveredNode].q + delta));
+                band.q = Math.max(0.1, Math.min(10, (band.q || 1) + delta));
                 computeCorrectedCurve();
                 applyBandsToAudio(wBands);
                 drawAutoEQGraph();
@@ -1938,22 +1982,33 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             const control = document.createElement('div');
             control.className = 'autoeq-band-control';
             control.dataset.band = i;
+            const currentType = band.type || 'peaking';
             control.innerHTML = `
-                <div class="autoeq-band-row">
-                    <span class="autoeq-band-label">Freq (${band.type ? band.type.toUpperCase() : 'PEAKING'})</span>
-                    <span class="autoeq-band-value autoeq-freq-val">${formatFreq(band.freq)} Hz</span>
+                <div class="autoeq-band-header">
+                    <span class="autoeq-band-number">${i + 1}</span>
+                    <select class="autoeq-type-select">
+                        <option value="peaking"${currentType === 'peaking' ? ' selected' : ''}>PK</option>
+                        <option value="lowshelf"${currentType === 'lowshelf' ? ' selected' : ''}>LSF</option>
+                        <option value="highshelf"${currentType === 'highshelf' ? ' selected' : ''}>HSF</option>
+                    </select>
+                    <div class="autoeq-band-param">
+                        <span class="autoeq-band-param-label">Freq</span>
+                        <span class="autoeq-band-value autoeq-freq-val">${formatFreq(band.freq)} Hz</span>
+                    </div>
+                    <div class="autoeq-band-param">
+                        <span class="autoeq-band-param-label">Gain</span>
+                        <span class="autoeq-band-value autoeq-gain-val">${band.gain > 0 ? '+' : ''}${band.gain.toFixed(1)} dB</span>
+                    </div>
+                    <div class="autoeq-band-param">
+                        <span class="autoeq-band-param-label">Q</span>
+                        <span class="autoeq-band-value autoeq-q-val">${band.q.toFixed(2)}</span>
+                    </div>
                 </div>
-                <input type="range" class="autoeq-band-slider autoeq-freq-slider" min="20" max="20000" step="1" value="${Math.round(band.freq)}" />
-                <div class="autoeq-band-row">
-                    <span class="autoeq-band-label">Gain</span>
-                    <span class="autoeq-band-value autoeq-gain-val">${band.gain > 0 ? '+' : ''}${band.gain.toFixed(1)} dB</span>
+                <div class="autoeq-band-sliders">
+                    <input type="range" class="autoeq-band-slider autoeq-freq-slider" min="20" max="20000" step="1" value="${Math.round(band.freq)}" />
+                    <input type="range" class="autoeq-band-slider autoeq-gain-slider" min="-30" max="30" step="0.1" value="${band.gain.toFixed(1)}" />
+                    <input type="range" class="autoeq-band-slider autoeq-q-slider" min="0.1" max="10" step="0.01" value="${band.q.toFixed(2)}" />
                 </div>
-                <input type="range" class="autoeq-band-slider autoeq-gain-slider" min="-30" max="30" step="0.1" value="${band.gain.toFixed(1)}" />
-                <div class="autoeq-band-row">
-                    <span class="autoeq-band-label">Q-Factor</span>
-                    <span class="autoeq-band-value autoeq-q-val">${band.q.toFixed(2)}</span>
-                </div>
-                <input type="range" class="autoeq-band-slider autoeq-q-slider" min="0.1" max="10" step="0.01" value="${band.q.toFixed(2)}" />
             `;
             autoeqBandsList.appendChild(control);
 
@@ -1990,6 +2045,16 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 if (!bands || !bands[i]) return;
                 bands[i].q = parseFloat(qSlider.value);
                 qVal.textContent = bands[i].q.toFixed(2);
+                computeCorrectedCurve();
+                applyBandsToAudio(bands);
+                drawAutoEQGraph();
+            });
+
+            const typeSelect = control.querySelector('.autoeq-type-select');
+            typeSelect.addEventListener('change', () => {
+                const bands = getActiveBands();
+                if (!bands || !bands[i]) return;
+                bands[i].type = typeSelect.value;
                 computeCorrectedCurve();
                 applyBandsToAudio(bands);
                 drawAutoEQGraph();
@@ -2081,7 +2146,17 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         const ctx = canvas.getContext('2d');
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
-        if (rect.width === 0) return;
+        if (rect.width === 0) {
+            // Canvas not laid out yet — retry when it becomes visible
+            const obs = new IntersectionObserver((entries, observer) => {
+                if (entries[0].isIntersecting) {
+                    observer.disconnect();
+                    drawMiniGraph(canvas, measurementData, targetData, correctedData);
+                }
+            });
+            obs.observe(canvas);
+            return;
+        }
 
         canvas.width = rect.width * dpr;
         canvas.height = (rect.height || 60) * dpr;
@@ -2134,6 +2209,80 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         if (correctedData) drawMiniFill(correctedData, ['#22c55e', '#06b6d4', '#3b82f6']);
     };
 
+    const BAND_PREVIEW_COLORS = ['#f472b6','#fb923c','#facc15','#4ade80','#22d3ee','#818cf8','#c084fc','#f87171','#34d399','#60a5fa'];
+
+    const drawBandsPreview = (canvas, bands, sampleRate) => {
+        if (!canvas || !bands || bands.length === 0) return;
+        const ctx = canvas.getContext('2d');
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0) {
+            const obs = new IntersectionObserver((entries, observer) => {
+                if (entries[0].isIntersecting) {
+                    observer.disconnect();
+                    drawBandsPreview(canvas, bands, sampleRate);
+                }
+            });
+            obs.observe(canvas);
+            return;
+        }
+        const sr = sampleRate || 48000;
+        const ph = rect.height || 100;
+        canvas.width = rect.width * dpr;
+        canvas.height = ph * dpr;
+        ctx.scale(dpr, dpr);
+        const pw = rect.width;
+        ctx.clearRect(0, 0, pw, ph);
+        const mid = ph / 2;
+        const dbRange = 12; // -12dB to +12dB
+
+        // Draw each band as a filled blob
+        bands.forEach((band, bi) => {
+            if (!band.enabled || Math.abs(band.gain) < 0.1) return;
+            const color = BAND_PREVIEW_COLORS[bi % BAND_PREVIEW_COLORS.length];
+            const pts = [];
+            for (let f = 20; f <= 20000; f *= 1.04) {
+                const resp = calculateBiquadResponse(f, band, sr);
+                pts.push({ x: freqToX(f, pw), y: mid - (Math.max(-dbRange, Math.min(dbRange, resp)) / dbRange) * mid * 0.9 });
+            }
+            if (!pts.length) return;
+
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, mid);
+            pts.forEach(p => ctx.lineTo(p.x, p.y));
+            ctx.lineTo(pts[pts.length - 1].x, mid);
+            ctx.closePath();
+            const grad = ctx.createLinearGradient(0, 0, pw, 0);
+            grad.addColorStop(0, color + '18');
+            grad.addColorStop(0.5, color + '55');
+            grad.addColorStop(1, color + '18');
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            ctx.beginPath();
+            pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.5;
+            ctx.globalAlpha = 0.85;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+        });
+
+        // Combined curve on top
+        ctx.beginPath();
+        let first = true;
+        for (let f = 20; f <= 20000; f *= 1.04) {
+            let total = 0;
+            for (const b of bands) { if (b.enabled) total += calculateBiquadResponse(f, b, sr); }
+            const x = freqToX(f, pw);
+            const y = mid - (Math.max(-dbRange, Math.min(dbRange, total)) / dbRange) * mid * 0.9;
+            first ? (ctx.moveTo(x, y), first = false) : ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    };
+
     // ========================================
     // Saved Profiles Rendering
     // ========================================
@@ -2156,7 +2305,6 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
             const preview = document.createElement('canvas');
             preview.className = 'autoeq-profile-preview';
-            preview.style.height = '80px';
             card.appendChild(preview);
 
             const info = document.createElement('div');
@@ -2186,9 +2334,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
             autoeqSavedGrid.appendChild(card);
 
-            // Draw mini preview
+            // Draw mini preview using filter bands
             requestAnimationFrame(() => {
-                drawMiniGraph(preview, profile.measurementData, profile.targetData, profile.correctedData);
+                drawBandsPreview(preview, profile.bands, profile.sampleRate);
             });
         });
     };
@@ -2209,7 +2357,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             headphoneType: autoeqSelectedEntry ? autoeqSelectedEntry.type : 'over-ear',
             targetId,
             targetLabel: targetEntry ? targetEntry.label : targetId,
-            bandCount: autoeqCurrentBands.length,
+            bandCount: (autoeqBandCount && autoeqBandCount.value ? parseInt(autoeqBandCount.value, 10) : null) || autoeqCurrentBands.length || 10,
             maxFreq: autoeqMaxFreq ? parseInt(autoeqMaxFreq.value, 10) : 16000,
             sampleRate: autoeqSampleRate ? parseInt(autoeqSampleRate.value, 10) : 48000,
             bands: autoeqCurrentBands.map(b => ({ ...b })),
@@ -2237,9 +2385,21 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         autoeqSelectedMeasurement = profile.measurementData ? [...profile.measurementData] : null;
         autoeqSelectedEntry = { name: profile.headphoneName, type: profile.headphoneType };
 
+        // Update headphone select dropdown
+        if (autoeqHeadphoneSelect) {
+            let opt = autoeqHeadphoneSelect.querySelector(`option[value="${profile.headphoneName}"]`);
+            if (!opt) {
+                opt = document.createElement('option');
+                opt.value = profile.headphoneName;
+                opt.textContent = profile.headphoneName.replace(/\s*\([^)]*\)\s*$/, '');
+                autoeqHeadphoneSelect.appendChild(opt);
+            }
+            autoeqHeadphoneSelect.value = profile.headphoneName;
+        }
+
         // Update UI selects
         if (autoeqTargetSelect) autoeqTargetSelect.value = profile.targetId || 'harman_oe_2018';
-        if (autoeqBandCount) autoeqBandCount.value = profile.bandCount || 10;
+        setAutoeqBandCount(profile.bandCount, profile.bands);
         if (autoeqMaxFreq) autoeqMaxFreq.value = profile.maxFreq || 16000;
         if (autoeqSampleRate) autoeqSampleRate.value = profile.sampleRate || 48000;
 
@@ -2299,6 +2459,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             if (autoeqRunBtn) autoeqRunBtn.disabled = false;
             drawAutoEQGraph();
             setAutoEQStatus(`Loaded ${data.length} points for ${entry.name}`, 'success');
+
+            // Persist for reload
+            equalizerSettings.setLastHeadphone(entry, data);
         } catch (err) {
             setAutoEQStatus('Failed: ' + err.message, 'error');
         }
@@ -2681,6 +2844,13 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     if (eqPreampSlider) eqPreampSlider.value = autoPreamp;
                     if (autoeqPreampValue) autoeqPreampValue.textContent = `${autoPreamp} dB`;
                 }
+            } else {
+                // Reset preamp to 0 dB
+                currentPreamp = 0;
+                equalizerSettings.setPreamp(0);
+                if (audioContextManager.setPreamp) audioContextManager.setPreamp(0);
+                if (eqPreampSlider) eqPreampSlider.value = 0;
+                if (autoeqPreampValue) autoeqPreampValue.textContent = '0 dB';
             }
         });
     }
@@ -2738,12 +2908,14 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     // Mode Toggle: AutoEQ vs Parametric EQ vs Speaker EQ
     // ========================================
     const modeButtons = document.querySelectorAll('.autoeq-mode-btn');
+    const EQ_MODE_KEY = 'eq-active-mode';
     let currentMode = 'autoeq';
 
     const speakerSection = document.getElementById('speaker-eq-section');
 
     const setEQMode = (mode) => {
         currentMode = mode;
+        localStorage.setItem(EQ_MODE_KEY, mode);
         modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
 
         const graphSection = document.querySelector('.autoeq-graph-section');
@@ -2986,71 +3158,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
             // Draw mini graph
             requestAnimationFrame(() => {
-                if (!preview || !profile.bands) return;
-                const ctx = preview.getContext('2d');
-                const dpr = window.devicePixelRatio || 1;
-                const rect = preview.getBoundingClientRect();
-                if (rect.width === 0) return;
-                const ph = 80;
-                preview.width = rect.width * dpr;
-                preview.height = ph * dpr;
-                ctx.scale(dpr, dpr);
-                const pw = rect.width;
-                ctx.clearRect(0, 0, pw, ph);
-
-                const sampleRate = 48000;
-                const nodeColors = ['#f472b6','#fb923c','#facc15','#4ade80','#22d3ee','#818cf8','#c084fc','#f87171','#34d399','#60a5fa'];
-                const mid = ph / 2;
-
-                // Draw each band as a filled gradient blob
-                profile.bands.forEach((band, bi) => {
-                    if (!band.enabled || Math.abs(band.gain) < 0.1) return;
-                    const color = nodeColors[bi % nodeColors.length];
-
-                    // Collect points
-                    const pts = [];
-                    for (let f = 20; f <= 20000; f *= 1.04) {
-                        const resp = calculateBiquadResponse(f, band, sampleRate);
-                        pts.push({ x: freqToX(f, pw), y: mid - (resp / 30) * mid * 0.85 });
-                    }
-                    if (!pts.length) return;
-
-                    // Fill area between curve and midline
-                    ctx.beginPath();
-                    ctx.moveTo(pts[0].x, mid);
-                    pts.forEach(p => ctx.lineTo(p.x, p.y));
-                    ctx.lineTo(pts[pts.length - 1].x, mid);
-                    ctx.closePath();
-                    const grad = ctx.createLinearGradient(0, 0, pw, 0);
-                    grad.addColorStop(0, color + '18');
-                    grad.addColorStop(0.5, color + '55');
-                    grad.addColorStop(1, color + '18');
-                    ctx.fillStyle = grad;
-                    ctx.fill();
-
-                    // Stroke the curve
-                    ctx.beginPath();
-                    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-                    ctx.strokeStyle = color;
-                    ctx.lineWidth = 1.5;
-                    ctx.globalAlpha = 0.85;
-                    ctx.stroke();
-                    ctx.globalAlpha = 1;
-                });
-
-                // Combined curve on top
-                ctx.beginPath();
-                let first = true;
-                for (let f = 20; f <= 20000; f *= 1.04) {
-                    let total = 0;
-                    for (const b of profile.bands) { if (b.enabled) total += calculateBiquadResponse(f, b, sampleRate); }
-                    const x = freqToX(f, pw);
-                    const y = mid - (total / 30) * mid * 0.85;
-                    first ? (ctx.moveTo(x, y), first = false) : ctx.lineTo(x, y);
-                }
-                ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
+                drawBandsPreview(preview, profile.bands);
             });
         });
     };
@@ -3124,7 +3232,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                         if (preampMatch) { preamp = parseFloat(preampMatch[1]); continue; }
                         const filterMatch = line.match(/Filter\s+\d+:\s*ON\s+(\w+)\s+Fc\s+([\d.]+)\s*Hz\s+Gain\s+([-\d.]+)\s*dB\s+Q\s+([\d.]+)/i);
                         if (filterMatch) {
-                            const typeMap = { PK: 'peaking', LS: 'lowshelf', HS: 'highshelf' };
+                            const typeMap = { PK: 'peaking', LS: 'lowshelf', LSC: 'lowshelf', LSF: 'lowshelf', HS: 'highshelf', HSC: 'highshelf', HSF: 'highshelf' };
                             bands.push({
                                 id: bands.length,
                                 type: typeMap[filterMatch[1].toUpperCase()] || 'peaking',
@@ -3751,13 +3859,37 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     // ========================================
     // Speaker Saved Profiles
     // ========================================
-    const SPEAKER_PROFILES_KEY = 'speaker-eq-profiles';
+    const SPEAKER_PROFILES_IDB_KEY = 'speaker-eq-profiles';
     const SPEAKER_ACTIVE_PROFILE_KEY = 'speaker-eq-active-profile';
+    let _speakerProfilesCache = null; // in-memory cache backed by IndexedDB
 
-    const getSpeakerProfiles = () => {
-        try { return JSON.parse(localStorage.getItem(SPEAKER_PROFILES_KEY)) || {}; }
-        catch { return {}; }
+    const getSpeakerProfiles = () => _speakerProfilesCache || {};
+
+    const loadSpeakerProfilesFromDB = async () => {
+        try {
+            // Migrate from localStorage if present
+            const lsData = localStorage.getItem('speaker-eq-profiles');
+            if (lsData) {
+                const parsed = JSON.parse(lsData);
+                if (parsed && Object.keys(parsed).length > 0) {
+                    await db.saveSetting(SPEAKER_PROFILES_IDB_KEY, parsed);
+                }
+                localStorage.removeItem('speaker-eq-profiles');
+            }
+        } catch { /* ignore migration errors */ }
+        try {
+            _speakerProfilesCache = (await db.getSetting(SPEAKER_PROFILES_IDB_KEY)) || {};
+        } catch {
+            _speakerProfilesCache = {};
+        }
     };
+
+    const saveSpeakerProfiles = async (profiles) => {
+        _speakerProfilesCache = profiles;
+        await db.saveSetting(SPEAKER_PROFILES_IDB_KEY, profiles);
+    };
+
+    await loadSpeakerProfilesFromDB();
 
     const renderSpeakerProfiles = () => {
         const grid = document.getElementById('speaker-saved-grid');
@@ -3796,11 +3928,11 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             delBtn.className = 'autoeq-profile-delete';
             delBtn.innerHTML = '&#128465;';
             delBtn.title = 'Delete profile';
-            delBtn.addEventListener('click', (e) => {
+            delBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const all = getSpeakerProfiles();
                 delete all[id];
-                localStorage.setItem(SPEAKER_PROFILES_KEY, JSON.stringify(all));
+                await saveSpeakerProfiles(all);
                 if (localStorage.getItem(SPEAKER_ACTIVE_PROFILE_KEY) === id) localStorage.removeItem(SPEAKER_ACTIVE_PROFILE_KEY);
                 renderSpeakerProfiles();
             });
@@ -3866,36 +3998,41 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const speakerSaveBtn = document.getElementById('speaker-save-btn');
     const speakerProfileNameInput = document.getElementById('speaker-profile-name');
     if (speakerSaveBtn) {
-        speakerSaveBtn.addEventListener('click', () => {
-            const name = speakerProfileNameInput?.value.trim() || `Speaker ${speakerConfig}`;
-            const activeIds = SPEAKER_CONFIGS[speakerConfig];
-            const profiles = getSpeakerProfiles();
-            const id = 'spk_' + Date.now();
+        speakerSaveBtn.addEventListener('click', async () => {
+            try {
+                const name = speakerProfileNameInput?.value.trim() || `Speaker ${speakerConfig}`;
+                const activeIds = SPEAKER_CONFIGS[speakerConfig];
+                const profiles = getSpeakerProfiles();
+                const id = 'spk_' + Date.now();
 
-            profiles[id] = {
-                name,
-                config: speakerConfig,
-                channels: activeIds.map(chId => {
-                    const ch = speakerChannels[chId];
-                    return {
-                        id: chId,
-                        targetId: ch.targetId,
-                        preamp: ch.preamp,
-                        bands: ch.bands.map(b => ({ ...b })),
-                        measurement: ch.measurement ? ch.measurement.map(p => ({ freq: p.freq, gain: parseFloat(p.gain.toFixed(1)) })) : null,
-                        measurementPreview: ch.measurement ? downsampleCurve(ch.measurement) : null,
-                        correctedPreview: autoeqCorrectedCurve && chId === speakerActiveChannel ? downsampleCurve(autoeqCorrectedCurve) : null,
-                    };
-                }),
-                createdAt: Date.now(),
-            };
+                profiles[id] = {
+                    name,
+                    config: speakerConfig,
+                    channels: activeIds.map(chId => {
+                        const ch = speakerChannels[chId];
+                        return {
+                            id: chId,
+                            targetId: ch.targetId,
+                            preamp: ch.preamp,
+                            bands: ch.bands.map(b => ({ ...b })),
+                            measurement: ch.measurement ? ch.measurement.map(p => ({ freq: p.freq, gain: parseFloat(p.gain.toFixed(1)) })) : null,
+                            measurementPreview: ch.measurement ? downsampleCurve(ch.measurement) : null,
+                            correctedPreview: autoeqCorrectedCurve && chId === speakerActiveChannel ? downsampleCurve(autoeqCorrectedCurve) : null,
+                        };
+                    }),
+                    createdAt: Date.now(),
+                };
 
-            localStorage.setItem(SPEAKER_PROFILES_KEY, JSON.stringify(profiles));
-            localStorage.setItem(SPEAKER_ACTIVE_PROFILE_KEY, id);
-            if (speakerProfileNameInput) speakerProfileNameInput.value = '';
-            renderSpeakerProfiles();
-            if (speakerEqStatus) speakerEqStatus.textContent = `Saved "${name}"`;
-            setTimeout(() => { if (speakerEqStatus) speakerEqStatus.textContent = ''; }, 2000);
+                await saveSpeakerProfiles(profiles);
+                localStorage.setItem(SPEAKER_ACTIVE_PROFILE_KEY, id);
+                if (speakerProfileNameInput) speakerProfileNameInput.value = '';
+                renderSpeakerProfiles();
+                if (speakerEqStatus) speakerEqStatus.textContent = `Saved "${name}"`;
+                setTimeout(() => { if (speakerEqStatus) speakerEqStatus.textContent = ''; }, 2000);
+            } catch (err) {
+                console.error('[Speaker Save]', err);
+                if (speakerEqStatus) speakerEqStatus.textContent = `Save failed: ${err.message}`;
+            }
         });
     }
 
@@ -3981,13 +4118,37 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     // Auto-load headphone database
     loadFullDatabase();
 
+    // Auto-load default popular headphone if no saved profile is active
+    const activeProfileId = equalizerSettings.getActiveAutoEQProfile();
+    if (!activeProfileId) {
+        // Try restoring last selected headphone (persisted measurement + entry)
+        const lastHp = equalizerSettings.getLastHeadphone();
+        if (lastHp) {
+            autoeqSelectedMeasurement = lastHp.measurementData;
+            autoeqSelectedEntry = lastHp.entry;
+            if (autoeqHeadphoneSelect) {
+                let opt = autoeqHeadphoneSelect.querySelector(`option[value="${lastHp.entry.name}"]`);
+                if (!opt) {
+                    opt = document.createElement('option');
+                    opt.value = lastHp.entry.name;
+                    opt.textContent = lastHp.entry.name.replace(/\s*\([^)]*\)\s*$/, '');
+                    autoeqHeadphoneSelect.appendChild(opt);
+                }
+                autoeqHeadphoneSelect.value = lastHp.entry.name;
+            }
+            if (autoeqRunBtn) autoeqRunBtn.disabled = false;
+            requestAnimationFrame(drawAutoEQGraph);
+        } else if (POPULAR_HEADPHONES.length > 0) {
+            loadHeadphoneEntry(POPULAR_HEADPHONES[0]);
+        }
+    }
+
     // Initial draw of graph (if EQ is enabled)
     if (equalizerSettings.isEnabled()) {
         requestAnimationFrame(drawAutoEQGraph);
     }
 
     // Load active profile on startup
-    const activeProfileId = equalizerSettings.getActiveAutoEQProfile();
     if (activeProfileId) {
         const profiles = equalizerSettings.getAutoEQProfiles();
         if (profiles[activeProfileId]) {
@@ -3997,14 +4158,65 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             autoeqCorrectedCurve = profile.correctedData ? [...profile.correctedData] : null;
             autoeqSelectedMeasurement = profile.measurementData ? [...profile.measurementData] : null;
             autoeqSelectedEntry = { name: profile.headphoneName, type: profile.headphoneType };
+            // Restore headphone select dropdown
+            if (autoeqHeadphoneSelect) {
+                let opt = autoeqHeadphoneSelect.querySelector(`option[value="${profile.headphoneName}"]`);
+                if (!opt) {
+                    opt = document.createElement('option');
+                    opt.value = profile.headphoneName;
+                    opt.textContent = profile.headphoneName.replace(/\s*\([^)]*\)\s*$/, '');
+                    autoeqHeadphoneSelect.appendChild(opt);
+                }
+                autoeqHeadphoneSelect.value = profile.headphoneName;
+            }
             if (autoeqTargetSelect) autoeqTargetSelect.value = profile.targetId || 'harman_oe_2018';
-            if (autoeqBandCount) autoeqBandCount.value = profile.bandCount || 10;
+            setAutoeqBandCount(profile.bandCount, profile.bands);
             if (autoeqMaxFreq) autoeqMaxFreq.value = profile.maxFreq || 16000;
             if (autoeqSampleRate) autoeqSampleRate.value = profile.sampleRate || 48000;
             if (autoeqRunBtn) autoeqRunBtn.disabled = false;
             if (autoeqCurrentBands) renderBandControls(autoeqCurrentBands);
             requestAnimationFrame(drawAutoEQGraph);
         }
+    }
+
+    // Restore parametric EQ active profile on startup
+    const activeParametricId = localStorage.getItem(PARAMETRIC_ACTIVE_KEY);
+    if (activeParametricId) {
+        const parametricProfiles = getParametricProfiles();
+        const paraProfile = parametricProfiles[activeParametricId];
+        if (paraProfile && paraProfile.bands) {
+            parametricBands = paraProfile.bands.map(b => ({ ...b }));
+        }
+    }
+
+    // Restore speaker EQ active profile on startup
+    const activeSpeakerId = localStorage.getItem(SPEAKER_ACTIVE_PROFILE_KEY);
+    if (activeSpeakerId) {
+        const speakerProfiles = getSpeakerProfiles();
+        const spkProfile = speakerProfiles[activeSpeakerId];
+        if (spkProfile) {
+            if (spkProfile.config) {
+                speakerConfig = spkProfile.config;
+                if (speakerConfigSelect) speakerConfigSelect.value = speakerConfig;
+            }
+            if (spkProfile.channels) {
+                spkProfile.channels.forEach(saved => {
+                    if (speakerChannels[saved.id]) {
+                        speakerChannels[saved.id].measurement = saved.measurement || null;
+                        speakerChannels[saved.id].targetId = saved.targetId || 'harman_room';
+                        speakerChannels[saved.id].preamp = saved.preamp || 0;
+                        speakerChannels[saved.id].bands = saved.bands ? saved.bands.map(b => ({ ...b })) : speakerChannels[saved.id].bands;
+                    }
+                });
+            }
+            speakerActiveChannel = SPEAKER_CONFIGS[speakerConfig][0];
+        }
+    }
+
+    // Restore EQ mode on startup
+    const savedEQMode = localStorage.getItem(EQ_MODE_KEY);
+    if (savedEQMode && ['autoeq', 'parametric', 'speaker'].includes(savedEQMode)) {
+        setEQMode(savedEQMode);
     }
 
     // Now Playing Mode

@@ -578,6 +578,49 @@ class AudioContextManager {
     }
 
     /**
+     * Calculate biquad filter magnitude response in dB at a given frequency
+     */
+    _biquadResponseDb(f, band, sr) {
+        if (!band.enabled || !band.type) return 0;
+        const w = 2 * Math.PI * band.freq / sr;
+        const p = 2 * Math.PI * f / sr;
+        const s = Math.sin(w) / (2 * band.q);
+        const A = Math.pow(10, band.gain / 40);
+        const c = Math.cos(w);
+        let b0, b1, b2, a0, a1, a2;
+        const t = band.type[0];
+        if (t === 'p') {
+            b0 = 1 + s * A; b1 = -2 * c; b2 = 1 - s * A;
+            a0 = 1 + s / A; a1 = -2 * c; a2 = 1 - s / A;
+        } else if (t === 'l') {
+            const sq = 2 * Math.sqrt(A) * s;
+            b0 = A * ((A + 1) - (A - 1) * c + sq);
+            b1 = 2 * A * ((A - 1) - (A + 1) * c);
+            b2 = A * ((A + 1) - (A - 1) * c - sq);
+            a0 = (A + 1) + (A - 1) * c + sq;
+            a1 = -2 * ((A - 1) + (A + 1) * c);
+            a2 = (A + 1) + (A - 1) * c - sq;
+        } else if (t === 'h') {
+            const sq = 2 * Math.sqrt(A) * s;
+            b0 = A * ((A + 1) + (A - 1) * c + sq);
+            b1 = -2 * A * ((A - 1) + (A + 1) * c);
+            b2 = A * ((A + 1) + (A - 1) * c - sq);
+            a0 = (A + 1) - (A - 1) * c + sq;
+            a1 = 2 * ((A - 1) - (A + 1) * c);
+            a2 = (A + 1) - (A - 1) * c - sq;
+        } else {
+            return 0;
+        }
+        const _a0 = 1 / a0;
+        const b0n = b0 * _a0, b1n = b1 * _a0, b2n = b2 * _a0;
+        const a1n = a1 * _a0, a2n = a2 * _a0;
+        const cp = Math.cos(p), c2p = Math.cos(2 * p);
+        const n = b0n * b0n + b1n * b1n + b2n * b2n + 2 * (b0n * b1n + b1n * b2n) * cp + 2 * b0n * b2n * c2p;
+        const d = 1 + a1n * a1n + a2n * a2n + 2 * (a1n + a1n * a2n) * cp + 2 * a2n * c2p;
+        return 10 * Math.log10(n / d);
+    }
+
+    /**
      * Clamp gain to valid range
      */
     _clampGain(gainDb) {
@@ -671,6 +714,8 @@ class AudioContextManager {
         this.freqRange = equalizerSettings.getFreqRange();
         this.frequencies = generateFrequencies(this.bandCount, this.freqRange.min, this.freqRange.max);
         this.currentGains = equalizerSettings.getGains(this.bandCount);
+        this.currentTypes = equalizerSettings.getBandTypes(this.bandCount);
+        this.currentQs = equalizerSettings.getBandQs(this.bandCount);
         this.isMonoAudioEnabled = monoAudioSettings.isEnabled();
         this.preamp = equalizerSettings.getPreamp();
     }
@@ -715,9 +760,21 @@ class AudioContextManager {
             Math.min(equalizerSettings.MAX_BANDS, enabledBands.length)
         );
 
-        // Calculate preamp: negative of max positive gain to prevent clipping
-        const maxGain = Math.max(0, ...enabledBands.map(b => b.gain));
-        const preamp = skipPreamp ? equalizerSettings.getPreamp() : (maxGain > 0 ? -Math.round(maxGain * 10) / 10 : 0);
+        // Calculate preamp: negative of cumulative peak gain across all bands to prevent clipping
+        let cumulativePeak = 0;
+        if (!skipPreamp) {
+            const sr = this.audioContext?.sampleRate ?? 48000;
+            // Sample frequencies to find the cumulative peak boost
+            const testFreqs = [20, 50, 100, 200, 400, 800, 1000, 2000, 4000, 8000, 12000, 16000, 20000];
+            for (const f of testFreqs) {
+                let sum = 0;
+                for (const b of enabledBands) {
+                    sum += this._biquadResponseDb(f, b, sr);
+                }
+                if (sum > cumulativePeak) cumulativePeak = sum;
+            }
+        }
+        const preamp = skipPreamp ? equalizerSettings.getPreamp() : (cumulativePeak > 0 ? -Math.round(cumulativePeak * 10) / 10 : 0);
 
         // Sort bands by frequency so index order is deterministic
         const sortedBands = [...enabledBands].sort((a, b) => a.freq - b.freq);
@@ -780,8 +837,11 @@ class AudioContextManager {
 
         this.frequencies.forEach((freq, index) => {
             const gain = this.currentGains[index] || 0;
+            const type = (this.currentTypes && this.currentTypes[index]) || 'peaking';
+            const filterType = type === 'lowshelf' ? 'LS' : type === 'highshelf' ? 'HS' : 'PK';
+            const q = (this.currentQs && this.currentQs[index] > 0) ? this.currentQs[index] : this._calculateQ(index);
             const filterNum = index + 1;
-            lines.push(`Filter ${filterNum}: ON PK Fc ${freq} Hz Gain ${gain.toFixed(1)} dB Q 0.71`);
+            lines.push(`Filter ${filterNum}: ON ${filterType} Fc ${freq} Hz Gain ${gain.toFixed(1)} dB Q ${q.toFixed(2)}`);
         });
 
         return lines.join('\n');
@@ -831,23 +891,33 @@ class AudioContextManager {
             this.setPreamp(preamp);
 
             // If different number of bands, adjust
-            if (filters.length !== this.bandCount) {
-                const newCount = Math.max(
-                    equalizerSettings.MIN_BANDS,
-                    Math.min(equalizerSettings.MAX_BANDS, filters.length)
-                );
+            const newCount = Math.max(
+                equalizerSettings.MIN_BANDS,
+                Math.min(equalizerSettings.MAX_BANDS, filters.length)
+            );
+            if (newCount !== this.bandCount) {
                 this.setBandCount(newCount);
             }
 
-            // Extract gains from filters
-            const gains = filters.slice(0, this.bandCount).map((f) => f.gain);
-            this.setAllGains(gains);
+            // Apply per-band frequencies, types, Qs, and gains from import
+            const sliced = filters.slice(0, this.bandCount);
+            const typeMap = { PK: 'peaking', LS: 'lowshelf', LSC: 'lowshelf', LSF: 'lowshelf', HS: 'highshelf', HSC: 'highshelf', HSF: 'highshelf' };
+            this.frequencies = sliced.map(f => f.freq);
+            this.currentTypes = sliced.map(f => typeMap[f.type] || 'peaking');
+            this.currentQs = sliced.map(f => f.q);
+            this.currentGains = sliced.map(f => this._clampGain(f.gain));
 
-            // Store filter frequencies if different
-            const newFreqs = filters.slice(0, this.bandCount).map((f) => f.freq);
-            if (JSON.stringify(newFreqs) !== JSON.stringify(this.frequencies)) {
-                equalizerSettings.setFreqRange(newFreqs[0], newFreqs[newFreqs.length - 1]);
+            // Rebuild EQ chain to apply new frequencies, types, and Qs
+            if (this.isInitialized && this.audioContext) {
+                this._destroyEQ();
+                this._createEQ();
+                this._connectGraph();
             }
+
+            // Persist all band settings
+            equalizerSettings.setGains(this.currentGains);
+            equalizerSettings.setBandTypes(this.currentTypes);
+            equalizerSettings.setBandQs(this.currentQs);
 
             return true;
         } catch (e) {
