@@ -151,7 +151,7 @@ export class Player {
             const el = this.activeElement;
             if (document.visibilityState === 'hidden' && !el.paused) {
                 // Proactively resume context when going to background to prevent suspension
-                audioContextManager.resume();
+                void audioContextManager.resume();
             }
             if (document.visibilityState === 'visible' && !el.paused) {
                 // Ensure audio context is resumed when user returns to the app
@@ -1952,7 +1952,7 @@ export class Player {
         this._bgAudioPending = true;
 
         // Lazy-load Capacitor core; no-op on web/iOS
-        (async () => {
+        void (async () => {
             try {
                 const { Capacitor } = await import('@capacitor/core');
                 if (Capacitor.getPlatform() !== 'android') return;
