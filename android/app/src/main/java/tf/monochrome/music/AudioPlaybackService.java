@@ -25,6 +25,17 @@ public class AudioPlaybackService extends Service {
 
     private PowerManager.WakeLock wakeLock;
 
+    /** Callback invoked once startForeground() has completed. */
+    interface OnReadyCallback {
+        void onReady();
+    }
+
+    private static volatile OnReadyCallback pendingCallback;
+
+    static void setOnReadyCallback(OnReadyCallback cb) {
+        pendingCallback = cb;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -43,6 +54,13 @@ public class AudioPlaybackService extends Service {
         }
 
         acquireWakeLock();
+
+        // Notify the plugin that the foreground service is ready
+        OnReadyCallback cb = pendingCallback;
+        pendingCallback = null;
+        if (cb != null) {
+            cb.onReady();
+        }
 
         // If the system kills this service, don't restart it automatically —
         // MainActivity will re-start it when audio resumes.

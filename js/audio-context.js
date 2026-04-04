@@ -118,6 +118,7 @@ class AudioContextManager {
         this.geqPreampNode = null;
         this.geqOutputNode = null;
         this.isGraphicEQEnabled = equalizerSettings.isGraphicEqEnabled();
+        this.isLegacyMode = false;
         this.geqFrequencies = [25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000, 20000];
         this.geqGains = equalizerSettings.getGraphicEqGains();
         this.geqPreamp = equalizerSettings.getGraphicEqPreamp();
@@ -452,7 +453,8 @@ class AudioContextManager {
                 lastNode = this.monoMergerNode;
             }
 
-            if (this.isEQEnabled && this.filters.length > 0) {
+            // Skip parametric filters when in legacy mode (only graphic EQ applies)
+            if (this.isEQEnabled && this.filters.length > 0 && !this.isLegacyMode) {
                 for (let i = 0; i < this.filters.length - 1; i++) {
                     this.filters[i].connect(this.filters[i + 1]);
                 }
@@ -552,7 +554,8 @@ class AudioContextManager {
                 lastNode = this.monoMergerNode;
             }
 
-            if (this.isEQEnabled && this.filters.length > 0) {
+            // Skip parametric filters when in legacy mode (only graphic EQ applies)
+            if (this.isEQEnabled && this.filters.length > 0 && !this.isLegacyMode) {
                 for (let i = 0; i < this.filters.length - 1; i++) {
                     this.filters[i].connect(this.filters[i + 1]);
                 }
@@ -1119,6 +1122,18 @@ class AudioContextManager {
     toggleGraphicEQ(enabled) {
         this.isGraphicEQEnabled = enabled;
         equalizerSettings.setGraphicEqEnabled(enabled);
+        if (this.isInitialized) {
+            this._connectGraph();
+        }
+    }
+
+    /**
+     * Enable or disable legacy mode.
+     * When active, the parametric EQ filter chain is bypassed so only the
+     * 16-band graphic EQ applies to the signal.
+     */
+    setLegacyMode(enabled) {
+        this.isLegacyMode = enabled;
         if (this.isInitialized) {
             this._connectGraph();
         }

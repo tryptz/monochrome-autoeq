@@ -1330,6 +1330,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         });
     };
 
+    // Clear any existing bands before building to ensure idempotent initialization
+    if (geqBandsContainer) geqBandsContainer.replaceChildren();
+    if (legacyGeqBandsContainer) legacyGeqBandsContainer.replaceChildren();
     buildGeqBands(geqBandsContainer, 'geq');
     buildGeqBands(legacyGeqBandsContainer, 'legacy-geq');
 
@@ -1916,6 +1919,31 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     };
 
     /**
+     * Compute the graph shift used to place non-parametric nodes on the visual Y axis.
+     * This must be applied when computing gain deltas so clicking at a node's drawn
+     * position results in zero change.
+     */
+    const getGraphShift = () => {
+        if (currentMode === 'parametric') return 0;
+        let tId, tList, meas;
+        if (currentMode === 'speaker') {
+            const sCh = speakerChannels[speakerActiveChannel];
+            tId = sCh?.targetId || 'harman_room';
+            tList = SPEAKER_TARGETS;
+            meas = sCh?.measurement;
+        } else {
+            tId = autoeqTargetSelect ? autoeqTargetSelect.value : 'harman_oe_2018';
+            tList = TARGETS;
+            meas = autoeqSelectedMeasurement;
+        }
+        const targetEntry = tList.find((t) => t.id === tId);
+        const targetData = targetEntry?.data;
+        if (targetData) return 75 - getNormalizationOffset(targetData);
+        if (meas) return 75 - getNormalizationOffset(meas);
+        return 0;
+    };
+
+    /**
      * Find closest node to coordinates
      */
     const findClosestNode = (mx, my, threshold = 15) => {
@@ -1937,24 +1965,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         const dbMin = dbCenter - dbHalfRange;
         const dbMax = dbCenter + dbHalfRange;
 
-        let graphShift = 0;
-        if (!isParam) {
-            let tId, tList, meas;
-            if (currentMode === 'speaker') {
-                const sCh = speakerChannels[speakerActiveChannel];
-                tId = sCh?.targetId || 'harman_room';
-                tList = SPEAKER_TARGETS;
-                meas = sCh?.measurement;
-            } else {
-                tId = autoeqTargetSelect ? autoeqTargetSelect.value : 'harman_oe_2018';
-                tList = TARGETS;
-                meas = autoeqSelectedMeasurement;
-            }
-            const targetEntry = tList.find((t) => t.id === tId);
-            const targetData = targetEntry?.data;
-            if (targetData) graphShift = 75 - getNormalizationOffset(targetData);
-            else if (meas) graphShift = 75 - getNormalizationOffset(meas);
-        }
+        let graphShift = getGraphShift();
 
         const sampleRate = autoeqSampleRate ? parseInt(autoeqSampleRate.value, 10) : 48000;
         let closest = -1,
@@ -2040,9 +2051,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                             const newGain = yToDb(coords.y - padTop, h, dbMin, dbMax);
                             bands[nodeIdx].gain = Math.max(-30, Math.min(30, Math.round(newGain * 10) / 10));
                         } else {
-                            const corrGain = interpolate(bands[nodeIdx].freq, autoeqCorrectedCurve || []);
+                            const shiftedGain = interpolate(bands[nodeIdx].freq, autoeqCorrectedCurve || []) + getGraphShift();
                             const newDb = yToDb(coords.y - padTop, h, dbMin, dbMax);
-                            const gainDelta = newDb - corrGain;
+                            const gainDelta = newDb - shiftedGain;
                             bands[nodeIdx].gain = Math.max(-30, Math.min(30, bands[nodeIdx].gain + gainDelta * 0.3));
                         }
 
@@ -2092,9 +2103,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 const newGain = yToDb(coords.y - padTop, h, dbMin, dbMax);
                 bands[draggedNode].gain = Math.max(-30, Math.min(30, Math.round(newGain * 10) / 10));
             } else {
-                const corrGain = interpolate(bands[draggedNode].freq, autoeqCorrectedCurve || []);
+                const shiftedGain = interpolate(bands[draggedNode].freq, autoeqCorrectedCurve || []) + getGraphShift();
                 const newDb = yToDb(coords.y - padTop, h, dbMin, dbMax);
-                const gainDelta = newDb - corrGain;
+                const gainDelta = newDb - shiftedGain;
                 bands[draggedNode].gain = Math.max(-30, Math.min(30, bands[draggedNode].gain + gainDelta * 0.3));
             }
 
@@ -2282,6 +2293,11 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                             if (isParam) {
                                 const newGain = yToDb(coords.y - padTop, h, dbMin, dbMax);
                                 bands[touchNodeIdx].gain = Math.max(-30, Math.min(30, Math.round(newGain * 10) / 10));
+                            } else {
+                                const shiftedGain = interpolate(bands[touchNodeIdx].freq, autoeqCorrectedCurve || []) + getGraphShift();
+                                const newDb = yToDb(coords.y - padTop, h, dbMin, dbMax);
+                                const gainDelta = newDb - shiftedGain;
+                                bands[touchNodeIdx].gain = Math.max(-30, Math.min(30, bands[touchNodeIdx].gain + gainDelta * 0.3));
                             }
                             draggedNode = touchNodeIdx;
                             computeCorrectedCurve();
@@ -2327,9 +2343,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     const newGain = yToDb(coords.y - padTop, h, dbMin, dbMax);
                     tBands[draggedNode].gain = Math.max(-30, Math.min(30, Math.round(newGain * 10) / 10));
                 } else {
-                    const corrGain = interpolate(tBands[draggedNode].freq, autoeqCorrectedCurve || []);
+                    const shiftedGain = interpolate(tBands[draggedNode].freq, autoeqCorrectedCurve || []) + getGraphShift();
                     const newDb = yToDb(coords.y - padTop, h, dbMin, dbMax);
-                    const gainDelta = newDb - corrGain;
+                    const gainDelta = newDb - shiftedGain;
                     tBands[draggedNode].gain = Math.max(-30, Math.min(30, tBands[draggedNode].gain + gainDelta * 0.3));
                 }
 
@@ -3391,11 +3407,13 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
         if (mode === 'legacy') {
             if (legacySection) legacySection.style.display = '';
-            // Enable graphic EQ audio processing when in legacy mode
+            // Enable graphic EQ audio processing and bypass parametric filters
+            audioContextManager.setLegacyMode(true);
             audioContextManager.toggleGraphicEQ(true);
             equalizerSettings.setGraphicEqEnabled(true);
         } else {
-            // Disable graphic EQ when leaving legacy mode
+            // Disable graphic EQ and restore parametric filters when leaving legacy mode
+            audioContextManager.setLegacyMode(false);
             audioContextManager.toggleGraphicEQ(false);
             equalizerSettings.setGraphicEqEnabled(false);
         }
@@ -3465,6 +3483,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 autoeq: document.getElementById('eq-howto-autoeq'),
                 parametric: document.getElementById('eq-howto-parametric'),
                 speaker: document.getElementById('eq-howto-speaker'),
+                legacy: document.getElementById('eq-howto-legacy'),
             };
             Object.values(tabs).forEach((t) => {
                 if (t) t.style.display = 'none';
@@ -3487,6 +3506,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         autoeq: document.getElementById('eq-howto-autoeq'),
         parametric: document.getElementById('eq-howto-parametric'),
         speaker: document.getElementById('eq-howto-speaker'),
+        legacy: document.getElementById('eq-howto-legacy'),
     };
 
     const updateHowtoTab = () => {

@@ -1948,6 +1948,9 @@ export class Player {
      * the WebView alive so Web Audio EQ processing isn't throttled.
      */
     _updateBackgroundAudioService(isPlaying) {
+        // Track the desired state so we can reconcile after a pending operation
+        this._bgAudioDesired = isPlaying;
+
         if (this._bgAudioPending) return;
         this._bgAudioPending = true;
 
@@ -1969,6 +1972,10 @@ export class Player {
                 // Not running in Capacitor or plugin unavailable — ignore
             } finally {
                 this._bgAudioPending = false;
+                // If the desired state changed while we were waiting, issue the new command
+                if (this._bgAudioDesired !== isPlaying) {
+                    this._updateBackgroundAudioService(this._bgAudioDesired);
+                }
             }
         })();
     }

@@ -15,9 +15,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     private func configureAudioSession() {
         let session = AVAudioSession.sharedInstance()
         do {
-            // .playback keeps audio alive when the app is backgrounded or the screen locks
+            // .playback keeps audio alive when the app is backgrounded or the screen locks.
+            // Only configure the category at launch; activation is deferred until playback
+            // actually starts so that opening the app doesn't interrupt other audio sources.
             try session.setCategory(.playback, mode: .default, options: [])
-            try session.setActive(true)
         } catch {
             print("[AudioSession] Failed to configure: \(error.localizedDescription)")
         }
