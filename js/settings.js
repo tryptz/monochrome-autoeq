@@ -1232,150 +1232,107 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     }
 
     // ========================================
-    // 16-Band Graphic Equalizer
+    // 16-Band Graphic Equalizer (Legacy EQ mode)
     // ========================================
-    {
-        const GEQ_FREQUENCIES = [
-            25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000, 20000,
-        ];
-        const GEQ_LABELS = [
-            '25',
-            '40',
-            '63',
-            '100',
-            '160',
-            '250',
-            '400',
-            '630',
-            '1K',
-            '1.6K',
-            '2.5K',
-            '4K',
-            '6.3K',
-            '10K',
-            '16K',
-            '20K',
-        ];
-        const geqToggle = document.getElementById('graphic-eq-enabled-toggle');
-        const geqContainer = document.getElementById('graphic-eq-container');
-        const geqBandsContainer = document.getElementById('graphic-eq-bands');
-        const geqPreampSlider = document.getElementById('graphic-eq-preamp-slider');
-        const geqPreampValue = document.getElementById('graphic-eq-preamp-value');
-        const geqPresetSelect = document.getElementById('graphic-eq-preset-select');
-        const geqResetBtn = document.getElementById('graphic-eq-reset-btn');
+    const GEQ_LABELS = ['25', '40', '63', '100', '160', '250', '400', '630', '1K', '1.6K', '2.5K', '4K', '6.3K', '10K', '16K', '20K'];
+    const geqBandsContainer = document.getElementById('graphic-eq-bands');
+    const geqPreampSlider = document.getElementById('graphic-eq-preamp-slider');
+    const geqPreampValue = document.getElementById('graphic-eq-preamp-value');
+    const geqPresetSelect = document.getElementById('graphic-eq-preset-select');
+    const geqResetBtn = document.getElementById('graphic-eq-reset-btn');
 
-        // Load saved graphic EQ gains (stored separately under 'graphicEq' key)
-        let geqGains = equalizerSettings.getGraphicEqGains() || new Array(16).fill(0);
-        let geqPreamp = equalizerSettings.getGraphicEqPreamp() || 0;
+    let geqGains = equalizerSettings.getGraphicEqGains() || new Array(16).fill(0);
+    let geqPreamp = equalizerSettings.getGraphicEqPreamp() || 0;
+    const geqRange = equalizerSettings.getRange();
 
-        const geqRange = equalizerSettings.getRange();
+    // Build 16 vertical slider bands
+    if (geqBandsContainer) {
+        GEQ_LABELS.forEach((_label, i) => {
+            const band = document.createElement('div');
+            band.className = 'graphic-eq-band';
 
-        // Build 16 vertical slider bands
-        if (geqBandsContainer) {
-            GEQ_FREQUENCIES.forEach((_freq, i) => {
-                const band = document.createElement('div');
-                band.className = 'graphic-eq-band';
+            const valueLabel = document.createElement('span');
+            valueLabel.className = 'graphic-eq-band-value';
+            valueLabel.textContent = `${geqGains[i] > 0 ? '+' : ''}${geqGains[i].toFixed(1)}`;
+            valueLabel.id = `geq-value-${i}`;
 
-                const valueLabel = document.createElement('span');
-                valueLabel.className = 'graphic-eq-band-value';
-                valueLabel.textContent = `${geqGains[i] > 0 ? '+' : ''}${geqGains[i].toFixed(1)}`;
-                valueLabel.id = `geq-value-${i}`;
+            const sliderWrap = document.createElement('div');
+            sliderWrap.className = 'graphic-eq-band-slider-wrap';
 
-                const sliderWrap = document.createElement('div');
-                sliderWrap.className = 'graphic-eq-band-slider-wrap';
+            const slider = document.createElement('input');
+            slider.type = 'range';
+            slider.min = geqRange.min;
+            slider.max = geqRange.max;
+            slider.step = '0.1';
+            slider.value = geqGains[i];
+            slider.id = `geq-slider-${i}`;
+            slider.setAttribute('aria-label', `${GEQ_LABELS[i]} Hz`);
 
-                const slider = document.createElement('input');
-                slider.type = 'range';
-                slider.min = geqRange.min;
-                slider.max = geqRange.max;
-                slider.step = '0.1';
-                slider.value = geqGains[i];
-                slider.id = `geq-slider-${i}`;
-                slider.setAttribute('aria-label', `${GEQ_LABELS[i]} Hz`);
-
-                slider.addEventListener('input', () => {
-                    const gain = parseFloat(slider.value);
-                    geqGains[i] = gain;
-                    valueLabel.textContent = `${gain > 0 ? '+' : ''}${gain.toFixed(1)}`;
-                    equalizerSettings.setGraphicEqGains(geqGains);
-                    audioContextManager.setGraphicEqBandGain(i, gain);
-                    if (geqPresetSelect) geqPresetSelect.value = '';
-                });
-
-                sliderWrap.appendChild(slider);
-
-                const freqLabel = document.createElement('span');
-                freqLabel.className = 'graphic-eq-band-label';
-                freqLabel.textContent = GEQ_LABELS[i];
-
-                band.appendChild(valueLabel);
-                band.appendChild(sliderWrap);
-                band.appendChild(freqLabel);
-                geqBandsContainer.appendChild(band);
-            });
-        }
-
-        // Preamp slider
-        if (geqPreampSlider) {
-            geqPreampSlider.value = geqPreamp;
-            if (geqPreampValue) geqPreampValue.textContent = `${geqPreamp} dB`;
-
-            geqPreampSlider.addEventListener('input', () => {
-                geqPreamp = parseFloat(geqPreampSlider.value);
-                if (geqPreampValue) geqPreampValue.textContent = `${geqPreamp.toFixed(1)} dB`;
-                equalizerSettings.setGraphicEqPreamp(geqPreamp);
-                audioContextManager.setGraphicEqPreamp(geqPreamp);
-            });
-        }
-
-        // Preset select
-        if (geqPresetSelect) {
-            geqPresetSelect.addEventListener('change', () => {
-                const key = geqPresetSelect.value;
-                if (!key) return;
-                const presets = getPresetsForBandCount(16);
-                const preset = presets[key];
-                if (!preset) return;
-                geqGains = [...preset.gains];
+            slider.addEventListener('input', () => {
+                const gain = parseFloat(slider.value);
+                geqGains[i] = gain;
+                valueLabel.textContent = `${gain > 0 ? '+' : ''}${gain.toFixed(1)}`;
                 equalizerSettings.setGraphicEqGains(geqGains);
-                audioContextManager.setGraphicEqAllGains(geqGains);
-                // Update sliders
-                geqGains.forEach((g, i) => {
-                    const sl = document.getElementById(`geq-slider-${i}`);
-                    const vl = document.getElementById(`geq-value-${i}`);
-                    if (sl) sl.value = g;
-                    if (vl) vl.textContent = `${g > 0 ? '+' : ''}${g.toFixed(1)}`;
-                });
+                audioContextManager.setGraphicEqBandGain(i, gain);
+                if (geqPresetSelect) geqPresetSelect.value = '';
             });
-        }
 
-        // Reset button
-        if (geqResetBtn) {
-            geqResetBtn.addEventListener('click', () => {
-                geqGains = new Array(16).fill(0);
-                equalizerSettings.setGraphicEqGains(geqGains);
-                audioContextManager.setGraphicEqAllGains(geqGains);
-                geqGains.forEach((_g, i) => {
-                    const sl = document.getElementById(`geq-slider-${i}`);
-                    const vl = document.getElementById(`geq-value-${i}`);
-                    if (sl) sl.value = 0;
-                    if (vl) vl.textContent = '0.0';
-                });
-                if (geqPresetSelect) geqPresetSelect.value = 'flat';
+            sliderWrap.appendChild(slider);
+
+            const freqLabel = document.createElement('span');
+            freqLabel.className = 'graphic-eq-band-label';
+            freqLabel.textContent = GEQ_LABELS[i];
+
+            band.appendChild(valueLabel);
+            band.appendChild(sliderWrap);
+            band.appendChild(freqLabel);
+            geqBandsContainer.appendChild(band);
+        });
+    }
+
+    if (geqPreampSlider) {
+        geqPreampSlider.value = geqPreamp;
+        if (geqPreampValue) geqPreampValue.textContent = `${geqPreamp} dB`;
+        geqPreampSlider.addEventListener('input', () => {
+            geqPreamp = parseFloat(geqPreampSlider.value);
+            if (geqPreampValue) geqPreampValue.textContent = `${geqPreamp.toFixed(1)} dB`;
+            equalizerSettings.setGraphicEqPreamp(geqPreamp);
+            audioContextManager.setGraphicEqPreamp(geqPreamp);
+        });
+    }
+
+    if (geqPresetSelect) {
+        geqPresetSelect.addEventListener('change', () => {
+            const key = geqPresetSelect.value;
+            if (!key) return;
+            const presets = getPresetsForBandCount(16);
+            const preset = presets[key];
+            if (!preset) return;
+            geqGains = [...preset.gains];
+            equalizerSettings.setGraphicEqGains(geqGains);
+            audioContextManager.setGraphicEqAllGains(geqGains);
+            geqGains.forEach((g, i) => {
+                const sl = document.getElementById(`geq-slider-${i}`);
+                const vl = document.getElementById(`geq-value-${i}`);
+                if (sl) sl.value = g;
+                if (vl) vl.textContent = `${g > 0 ? '+' : ''}${g.toFixed(1)}`;
             });
-        }
+        });
+    }
 
-        // Toggle enables/disables audio processing (sliders always visible)
-        if (geqToggle) {
-            const geqEnabled = equalizerSettings.isGraphicEqEnabled();
-            geqToggle.checked = geqEnabled;
-
-            geqToggle.addEventListener('change', (e) => {
-                const enabled = e.target.checked;
-                equalizerSettings.setGraphicEqEnabled(enabled);
-                audioContextManager.toggleGraphicEQ(enabled);
+    if (geqResetBtn) {
+        geqResetBtn.addEventListener('click', () => {
+            geqGains = new Array(16).fill(0);
+            equalizerSettings.setGraphicEqGains(geqGains);
+            audioContextManager.setGraphicEqAllGains(geqGains);
+            geqGains.forEach((_g, i) => {
+                const sl = document.getElementById(`geq-slider-${i}`);
+                const vl = document.getElementById(`geq-value-${i}`);
+                if (sl) sl.value = 0;
+                if (vl) vl.textContent = '0.0';
             });
-        }
+            if (geqPresetSelect) geqPresetSelect.value = 'flat';
+        });
     }
 
     // ========================================
@@ -3367,13 +3324,14 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         const presetRow = document.getElementById('autoeq-preset-row');
         const parametricProfiles = document.getElementById('autoeq-parametric-profiles');
         const speakerSavedSection = document.getElementById('speaker-saved-section');
+        const legacySection = document.getElementById('graphic-eq-section');
 
         // Reset interactive state on switch
         draggedNode = null;
         hoveredNode = null;
 
-        // Graph always visible in all modes
-        if (graphSection) graphSection.style.display = '';
+        // Graph visible in all modes except legacy
+        if (graphSection) graphSection.style.display = mode === 'legacy' ? 'none' : '';
         // Only show shared AutoEq button in AutoEQ mode
         if (autoeqRunBtn) autoeqRunBtn.style.display = mode === 'autoeq' ? '' : 'none';
 
@@ -3386,6 +3344,18 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         if (parametricProfiles) parametricProfiles.style.display = 'none';
         if (speakerSection) speakerSection.style.display = 'none';
         if (speakerSavedSection) speakerSavedSection.style.display = 'none';
+        if (legacySection) legacySection.style.display = 'none';
+
+        if (mode === 'legacy') {
+            if (legacySection) legacySection.style.display = '';
+            // Enable graphic EQ audio processing when in legacy mode
+            audioContextManager.toggleGraphicEQ(true);
+            equalizerSettings.setGraphicEqEnabled(true);
+        } else {
+            // Disable graphic EQ when leaving legacy mode
+            audioContextManager.toggleGraphicEQ(false);
+            equalizerSettings.setGraphicEqEnabled(false);
+        }
 
         if (mode === 'autoeq') {
             if (controlsSection) controlsSection.style.display = '';
