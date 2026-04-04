@@ -33,6 +33,25 @@ export class Visualizer {
         // ---- CACHED STATE ----
         this._lastPrimaryColor = '';
         this._resizeBound = () => this.resize();
+        this._backgroundPaused = false;
+
+        // Pause animation loop when the app is backgrounded so the analyser's
+        // FFT reads don't compete with the EQ biquad filter chain for audio
+        // thread time — the main cause of audio skipping with AutoEQ in background.
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && this.isActive) {
+                this._backgroundPaused = true;
+                if (this.animationId) {
+                    cancelAnimationFrame(this.animationId);
+                    this.animationId = null;
+                }
+            } else if (document.visibilityState === 'visible' && this._backgroundPaused) {
+                this._backgroundPaused = false;
+                if (this.isActive && !this.animationId) {
+                    this.animate();
+                }
+            }
+        });
     }
 
     /**
@@ -133,14 +152,14 @@ export class Visualizer {
         this._currentContextType = type;
     }
 
-    start() {
+    async start() {
         if (this.isActive) return;
 
         if (!this.ctx) {
             this.initContext();
         }
         if (!this.audioContext) {
-            this.init();
+            await this.init();
         }
 
         if (!this.analyser) {
