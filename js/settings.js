@@ -3403,11 +3403,13 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
         if (mode === 'legacy') {
             if (legacySection) legacySection.style.display = '';
-            // Enable graphic EQ audio processing when in legacy mode
+            // Disable parametric EQ entirely - only graphic EQ active to save resources
+            audioContextManager.isEQEnabled = false;
             audioContextManager.toggleGraphicEQ(true);
             equalizerSettings.setGraphicEqEnabled(true);
         } else {
-            // Disable graphic EQ when leaving legacy mode
+            // Disable graphic EQ entirely - only parametric EQ active to save resources
+            audioContextManager.isEQEnabled = true;
             audioContextManager.toggleGraphicEQ(false);
             equalizerSettings.setGraphicEqEnabled(false);
         }
