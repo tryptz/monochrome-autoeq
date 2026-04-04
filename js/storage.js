@@ -1714,7 +1714,9 @@ export const equalizerSettings = {
     setGraphicEqEnabled(enabled) {
         try {
             localStorage.setItem(this.GEQ_ENABLED_KEY, String(!!enabled));
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     },
 
     getGraphicEqGains() {
@@ -1724,14 +1726,18 @@ export const equalizerSettings = {
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed) && parsed.length === 16) return parsed;
             }
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
         return new Array(16).fill(0);
     },
 
     setGraphicEqGains(gains) {
         try {
             localStorage.setItem(this.GEQ_GAINS_KEY, JSON.stringify(gains));
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     },
 
     getGraphicEqPreamp() {
@@ -1746,7 +1752,9 @@ export const equalizerSettings = {
     setGraphicEqPreamp(db) {
         try {
             localStorage.setItem(this.GEQ_PREAMP_KEY, String(db));
-        } catch { /* ignore */ }
+        } catch {
+            /* ignore */
+        }
     },
 };
 
