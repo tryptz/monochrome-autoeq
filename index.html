@@ -4888,6 +4888,20 @@
                             <div class="settings-group">
                                 <div class="setting-item">
                                     <div class="info">
+                                        <span class="label">Write Artists Separately</span>
+                                        <span class="description"
+                                            >Write artists separately to metadata. Requires player support.</span
+                                        >
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="write-artists-separately-toggle" />
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="settings-group">
+                                <div class="setting-item">
+                                    <div class="info">
                                         <span class="label">Download Lyrics</span>
                                         <span class="description"
                                             >Include .lrc files when downloading tracks/albums</span
@@ -5208,17 +5222,54 @@
                                     </div>
                                 </div>
                                 <div id="blocked-content-list" style="display: none">
-                                    <p id="blocked-empty-message" style="display: none; color: var(--muted-foreground); font-size: 0.875rem; padding: 0.5rem 0;">Nothing blocked yet.</p>
+                                    <p
+                                        id="blocked-empty-message"
+                                        style="
+                                            display: none;
+                                            color: var(--muted-foreground);
+                                            font-size: 0.875rem;
+                                            padding: 0.5rem 0;
+                                        "
+                                    >
+                                        Nothing blocked yet.
+                                    </p>
                                     <div id="blocked-artists-section" style="display: none">
-                                        <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--muted-foreground); margin: 0.75rem 0 0.25rem;">Artists</h4>
+                                        <h4
+                                            style="
+                                                font-size: 0.75rem;
+                                                text-transform: uppercase;
+                                                color: var(--muted-foreground);
+                                                margin: 0.75rem 0 0.25rem;
+                                            "
+                                        >
+                                            Artists
+                                        </h4>
                                         <ul id="blocked-artists-list" class="blocked-items-list"></ul>
                                     </div>
                                     <div id="blocked-albums-section" style="display: none">
-                                        <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--muted-foreground); margin: 0.75rem 0 0.25rem;">Albums</h4>
+                                        <h4
+                                            style="
+                                                font-size: 0.75rem;
+                                                text-transform: uppercase;
+                                                color: var(--muted-foreground);
+                                                margin: 0.75rem 0 0.25rem;
+                                            "
+                                        >
+                                            Albums
+                                        </h4>
                                         <ul id="blocked-albums-list" class="blocked-items-list"></ul>
                                     </div>
                                     <div id="blocked-tracks-section" style="display: none">
-                                        <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--muted-foreground); margin: 0.75rem 0 0.25rem;">Tracks</h4>
+                                        <h4
+                                            style="
+                                                font-size: 0.75rem;
+                                                text-transform: uppercase;
+                                                color: var(--muted-foreground);
+                                                margin: 0.75rem 0 0.25rem;
+                                            "
+                                        >
+                                            Tracks
+                                        </h4>
                                         <ul id="blocked-tracks-list" class="blocked-items-list"></ul>
                                     </div>
                                 </div>
