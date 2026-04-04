@@ -1365,16 +1365,14 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             });
         }
 
-        // Toggle visibility
+        // Toggle enables/disables audio processing (sliders always visible)
         if (geqToggle) {
             const geqEnabled = equalizerSettings.isGraphicEqEnabled();
             geqToggle.checked = geqEnabled;
-            if (geqContainer) geqContainer.style.display = geqEnabled ? 'flex' : 'none';
 
             geqToggle.addEventListener('change', (e) => {
                 const enabled = e.target.checked;
                 equalizerSettings.setGraphicEqEnabled(enabled);
-                if (geqContainer) geqContainer.style.display = enabled ? 'flex' : 'none';
                 audioContextManager.toggleGraphicEQ(enabled);
             });
         }
