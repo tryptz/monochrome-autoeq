@@ -1509,6 +1509,15 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     /**
      * Draw the frequency response graph with Original, Target, and Corrected curves
      */
+    let _drawGraphRafId = null;
+    const scheduleDrawAutoEQGraph = () => {
+        if (_drawGraphRafId) return;
+        _drawGraphRafId = requestAnimationFrame(() => {
+            _drawGraphRafId = null;
+            drawAutoEQGraph();
+        });
+    };
+
     const drawAutoEQGraph = () => {
         if (!autoeqCanvas) return;
         const activeBands = getActiveBands();
@@ -2357,7 +2366,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         // Resize observer for graph
         if (autoeqGraphWrapper) {
             const ro = new ResizeObserver(() => {
-                drawAutoEQGraph();
+                scheduleDrawAutoEQGraph();
             });
             ro.observe(autoeqGraphWrapper);
         }
@@ -2420,7 +2429,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 freqVal.textContent = `${formatFreq(bands[i].freq)} Hz`;
                 computeCorrectedCurve();
                 applyBandsToAudio(bands);
-                drawAutoEQGraph();
+                scheduleDrawAutoEQGraph();
             });
 
             gainSlider.addEventListener('input', () => {
@@ -2430,7 +2439,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 gainVal.textContent = `${bands[i].gain > 0 ? '+' : ''}${bands[i].gain.toFixed(1)} dB`;
                 computeCorrectedCurve();
                 applyBandsToAudio(bands);
-                drawAutoEQGraph();
+                scheduleDrawAutoEQGraph();
             });
 
             qSlider.addEventListener('input', () => {
@@ -2440,7 +2449,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 qVal.textContent = bands[i].q.toFixed(2);
                 computeCorrectedCurve();
                 applyBandsToAudio(bands);
-                drawAutoEQGraph();
+                scheduleDrawAutoEQGraph();
             });
 
             const typeSelect = control.querySelector('.autoeq-type-select');
@@ -2450,7 +2459,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 bands[i].type = typeSelect.value;
                 computeCorrectedCurve();
                 applyBandsToAudio(bands);
-                drawAutoEQGraph();
+                scheduleDrawAutoEQGraph();
             });
         });
     };
