@@ -139,12 +139,12 @@
                     "
                 ></div>
                 <button id="toggle-ui-btn" class="fullscreen-ui-toggle" title="Toggle UI">
-                    <use svg="!lucide/x.svg" size="24" />
+                    <use svg="!lucide/eye-off.svg" size="24" />
                 </button>
                 <button id="toggle-fullscreen-lyrics-btn" class="fullscreen-lyrics-toggle" title="Toggle Lyrics">
                     <use svg="!lucide/mic-vocal.svg" size="24" />
                 </button>
-                <button id="close-fullscreen-cover-btn" title="Close">&times;</button>
+                <button id="close-fullscreen-cover-btn" title="Close"><use svg="!lucide/x.svg" size="24" /></button>
                 <div class="fullscreen-main-view">
                     <img
                         id="fullscreen-cover-image"
@@ -2956,6 +2956,54 @@
                                         <span class="slider"></span>
                                     </label>
                                 </div>
+                                <div class="setting-item">
+                                    <div class="info">
+                                        <span class="label">No Round Album Cover</span>
+                                        <span class="description">Do not round the album cover in fullscreen view</span>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="fullscreen-cover-no-round-toggle" checked />
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="setting-item">
+                                    <div class="info">
+                                        <span class="label">Vanilla Tilt Album Cover</span>
+                                        <span class="description"
+                                            >Enable 3D tilt effect on the album cover in fullscreen view</span
+                                        >
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" id="fullscreen-cover-vanilla-tilt-toggle" checked />
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                                <div class="setting-item">
+                                    <div class="info">
+                                        <span class="label">Tilt Distance</span>
+                                        <span class="description">Max tilt distance (default: 10)</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        id="fullscreen-cover-tilt-distance"
+                                        min="0"
+                                        max="30"
+                                        value="10"
+                                    />
+                                </div>
+                                <div class="setting-item">
+                                    <div class="info">
+                                        <span class="label">Tilt Speed</span>
+                                        <span class="description">Tilt animation speed in ms (default: 240)</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        id="fullscreen-cover-tilt-speed"
+                                        min="50"
+                                        max="1000"
+                                        value="240"
+                                    />
+                                </div>
                             </div>
 
                             <div class="settings-group">
@@ -3184,6 +3232,18 @@
                                         <input type="checkbox" id="shuffle-editors-picks-toggle" checked />
                                         <span class="slider"></span>
                                     </label>
+                                </div>
+                            </div>
+
+                            <div class="settings-group">
+                                <div class="setting-item">
+                                    <div class="info">
+                                        <span class="label">Editor's Picks Source</span>
+                                        <span class="description">Choose which editor's picks file to display</span>
+                                    </div>
+                                    <select id="editors-picks-source-select" class="select-dropdown">
+                                        <option value="current">Current</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -4000,23 +4060,23 @@
                                         </button>
 
                                         <div class="eq-howto-tab autoeq" id="eq-howto-autoeq">
-                                            <h4>AutoEQ &mdash; Headphone Correction</h4>
+                                            <h4>AutoEQ - Headphone Correction</h4>
                                             <ol>
                                                 <li>
                                                     <b>Select your headphone</b> from the dropdown or search the
                                                     database below.
                                                 </li>
                                                 <li>
-                                                    <b>Pick a target curve</b> &mdash; Harman is the most popular. You
-                                                    can also import a custom target.
+                                                    <b>Pick a target curve</b> - Harman is the most popular. You can
+                                                    also import a custom target.
                                                 </li>
                                                 <li>
                                                     Adjust <b>filter bands</b> (more = finer correction, 10 is a good
                                                     default).
                                                 </li>
                                                 <li>
-                                                    Click <b>AutoEQ</b> &mdash; the algorithm generates parametric
-                                                    filters that shape your headphone's response toward the target.
+                                                    Click <b>AutoEQ</b> - the algorithm generates parametric filters
+                                                    that shape your headphone's response toward the target.
                                                 </li>
                                                 <li>
                                                     The <b>pink corrected curve</b> on the graph shows the predicted
@@ -4043,7 +4103,7 @@
                                             id="eq-howto-parametric"
                                             style="display: none"
                                         >
-                                            <h4>Parametric EQ &mdash; Manual Control</h4>
+                                            <h4>Parametric EQ - Manual Control</h4>
                                             <ol>
                                                 <li>
                                                     Each band supports <b>peaking, low-shelf, and high-shelf</b> filter
@@ -4081,7 +4141,7 @@
                                         </div>
 
                                         <div class="eq-howto-tab speaker" id="eq-howto-speaker" style="display: none">
-                                            <h4>Speaker EQ &mdash; Room Correction</h4>
+                                            <h4>Speaker EQ - Room Correction</h4>
                                             <ol>
                                                 <li>Select your <b>speaker config</b> (2.0, 5.1, or 7.1).</li>
                                                 <li>
@@ -4089,18 +4149,17 @@
                                                     a time.
                                                 </li>
                                                 <li>
-                                                    <b>Measure</b>: click the mic button &mdash; pink noise plays for 5
+                                                    <b>Measure</b>: click the mic button - pink noise plays for 5
                                                     seconds while your microphone captures the room response. Or
                                                     <b>import</b> a measurement file from REW or similar.
                                                 </li>
                                                 <li>
-                                                    Pick a <b>target</b> &mdash; Harman In-Room is recommended for
-                                                    speakers.
+                                                    Pick a <b>target</b> - Harman In-Room is recommended for speakers.
                                                 </li>
                                                 <li>
                                                     Set <b>Bass Limit</b> (don't EQ below this) and
-                                                    <b>Room Limit</b> (don't EQ above this) &mdash; the colored lines on
-                                                    the graph show the active range.
+                                                    <b>Room Limit</b> (don't EQ above this) - the colored lines on the
+                                                    graph show the active range.
                                                 </li>
                                                 <li>
                                                     Click <b>AutoEQ</b> to generate correction filters for that channel.
@@ -5148,6 +5207,21 @@
                                         </button>
                                     </div>
                                 </div>
+                                <div id="blocked-content-list" style="display: none">
+                                    <p id="blocked-empty-message" style="display: none; color: var(--muted-foreground); font-size: 0.875rem; padding: 0.5rem 0;">Nothing blocked yet.</p>
+                                    <div id="blocked-artists-section" style="display: none">
+                                        <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--muted-foreground); margin: 0.75rem 0 0.25rem;">Artists</h4>
+                                        <ul id="blocked-artists-list" class="blocked-items-list"></ul>
+                                    </div>
+                                    <div id="blocked-albums-section" style="display: none">
+                                        <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--muted-foreground); margin: 0.75rem 0 0.25rem;">Albums</h4>
+                                        <ul id="blocked-albums-list" class="blocked-items-list"></ul>
+                                    </div>
+                                    <div id="blocked-tracks-section" style="display: none">
+                                        <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--muted-foreground); margin: 0.75rem 0 0.25rem;">Tracks</h4>
+                                        <ul id="blocked-tracks-list" class="blocked-items-list"></ul>
+                                    </div>
+                                </div>
                             </div>
                             <p
                                 id="settings-commit-info"
@@ -5445,6 +5519,7 @@
                 </div>
             </footer>
         </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/pocketbase@0.21.3/dist/pocketbase.umd.js"></script>
         <script type="module" src="/js/app.js"></script>
     </body>

@@ -73,7 +73,7 @@ const LONG_PRESS_DURATION = 500;
 function handleTrackTouchStart(e) {
     if (!('ontouchstart' in window)) return;
     const trackItem = e.target.closest('.track-item');
-    if (!trackItem || trackItem.classList.contains('unavailable') || trackItem.classList.contains('blocked')) return;
+    if (!trackItem || trackItem.classList.contains('unavailable')) return;
 
     isLongPress = false;
     longPressTrackItem = trackItem;
@@ -655,7 +655,7 @@ export function initializePlayerEvents(player, audioPlayer, scrobbler, ui) {
             progressBar.style.maskImage = '';
 
             try {
-                const streamUrl = await player.api.getStreamUrl(player.currentTrack.id, 'LOW');
+                const { url: streamUrl } = await player.api.getStreamUrl(player.currentTrack.id, 'LOW');
                 const waveformData = await waveformGenerator.getWaveform(streamUrl, player.currentTrack.id);
 
                 if (waveformData && currentTrackIdForWaveform === player.currentTrack.id) {
@@ -1336,7 +1336,8 @@ export async function handleTrackAction(
     // Individual Track Actions
     // Check if track/artist is blocked
     const { contentBlockingSettings } = await import('./storage.js');
-    if (type === 'track' && contentBlockingSettings.shouldHideTrack(item)) {
+    const BLOCKED_PLAY_ACTIONS = new Set(['play-card', 'add-to-queue', 'play-next', 'start-mix']);
+    if (type === 'track' && BLOCKED_PLAY_ACTIONS.has(action) && contentBlockingSettings.shouldHideTrack(item)) {
         showNotification('This track is blocked');
         return;
     }
@@ -2165,7 +2166,7 @@ export function initializeTrackInteractions(player, api, mainContent, contextMen
         }
 
         const trackItem = e.target.closest('.track-item');
-        if (trackItem && (trackItem.classList.contains('unavailable') || trackItem.classList.contains('blocked'))) {
+        if (trackItem && trackItem.classList.contains('unavailable')) {
             return;
         }
         if (isLongPress && longPressTrackItem === trackItem) {
@@ -2173,6 +2174,7 @@ export function initializeTrackInteractions(player, api, mainContent, contextMen
         }
         if (
             trackItem &&
+            !trackItem.classList.contains('blocked') &&
             !trackItem.dataset.queueIndex &&
             !e.target.closest('.remove-from-playlist-btn') &&
             !e.target.closest('.artist-link') &&
@@ -2256,17 +2258,13 @@ export function initializeTrackInteractions(player, api, mainContent, contextMen
 
         const card = e.target.closest('.card');
         if (card) {
-            // Don't navigate if card is blocked (unless clicking menu button)
-            if (card.classList.contains('blocked') && !e.target.closest('.card-menu-btn')) {
-                return;
-            }
-
             if (e.target.closest('.edit-playlist-btn') || e.target.closest('.delete-playlist-btn')) {
                 return;
             }
 
             const libraryTracksContainer = card.closest('#library-tracks-container');
             if (libraryTracksContainer && card.dataset.trackId) {
+                if (card.classList.contains('blocked')) return;
                 if (
                     e.target.closest('.like-btn') ||
                     e.target.closest('.card-play-btn') ||
@@ -2380,6 +2378,38 @@ export function initializeTrackInteractions(player, api, mainContent, contextMen
             await updateContextMenuLikeState(contextMenu, item);
             positionMenu(contextMenu, e.clientX, e.clientY);
         }
+    });
+
+    document.querySelector('.now-playing-bar')?.addEventListener('contextmenu', async (e) => {
+        if (!player.currentTrack) return;
+        const track = player.currentTrack;
+        if (track.isLocal) return;
+
+        const target = e.target.closest('.cover, .title, .album, .artist');
+        if (!target) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (contextMenu._originalHTML) {
+            contextMenu.innerHTML = contextMenu._originalHTML;
+            contextMenu._originalHTML = null;
+        }
+
+        contextTrack = track;
+        contextMenu._contextTrack = track;
+        contextMenu._contextType = track.type || 'track';
+        contextMenu._selectedTracks = [];
+
+        const unavailableActions = ['play-next', 'add-to-queue', 'download', 'track-mix'];
+        contextMenu.querySelectorAll('[data-action]').forEach((btn) => {
+            if (unavailableActions.includes(btn.dataset.action)) {
+                btn.style.display = track.isUnavailable ? 'none' : 'block';
+            }
+        });
+
+        await updateContextMenuLikeState(contextMenu, track);
+        positionMenu(contextMenu, e.clientX, e.clientY);
     });
 
     document.addEventListener('click', (e) => {

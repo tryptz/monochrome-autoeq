@@ -35,6 +35,10 @@ import {
     analyticsSettings,
     modalSettings,
     preferDolbyAtmosSettings,
+    fullscreenCoverNoRoundSettings,
+    fullscreenCoverVanillaTiltSettings,
+    fullscreenCoverTiltDistanceSettings,
+    fullscreenCoverTiltSpeedSettings,
 } from './storage.js';
 import { audioContextManager, getPresetsForBandCount } from './audio-context.js';
 import { calculateBiquadResponse, interpolate, getNormalizationOffset, runAutoEqAlgorithm } from './autoeq-engine.js';
@@ -1228,7 +1232,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     }
 
     // ========================================
-    // Precision AutoEQ — Redesigned Equalizer
+    // Precision AutoEQ - Redesigned Equalizer
     // ========================================
     const eqToggle = document.getElementById('equalizer-enabled-toggle');
     const eqContainer = document.getElementById('equalizer-container');
@@ -1939,7 +1943,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             const coords = getCanvasCoords(e);
             const isParam = currentMode === 'parametric';
 
-            // getActiveBands() returns null in autoeq mode before first run — init to empty array
+            // getActiveBands() returns null in autoeq mode before first run - init to empty array
             let bands = getActiveBands();
             if (!bands) {
                 if (currentMode === 'autoeq') {
@@ -2284,7 +2288,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         const dpr = window.devicePixelRatio || 1;
         const rect = canvas.getBoundingClientRect();
         if (rect.width === 0) {
-            // Canvas not laid out yet — retry when it becomes visible
+            // Canvas not laid out yet - retry when it becomes visible
             const obs = new IntersectionObserver((entries, observer) => {
                 if (entries[0].isIntersecting) {
                     observer.disconnect();
@@ -3734,7 +3738,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         });
     }
 
-    // Measure All — plays pink noise once, assigns averaged measurement to all active channels
+    // Measure All - plays pink noise once, assigns averaged measurement to all active channels
     const speakerMeasureAllBtn = document.getElementById('speaker-measure-all-btn');
     if (speakerMeasureAllBtn) {
         speakerMeasureAllBtn.addEventListener('click', async () => {
@@ -3878,7 +3882,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         });
     }
 
-    // AutoEQ All — runs AutoEQ on every active channel that has a measurement
+    // AutoEQ All - runs AutoEQ on every active channel that has a measurement
     const speakerAutoEqAllBtn = document.getElementById('speaker-autoeq-all-btn');
     if (speakerAutoEqAllBtn) {
         speakerAutoEqAllBtn.addEventListener('click', () => {
@@ -4604,6 +4608,46 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         });
     }
 
+    // Fullscreen Cover No Round Toggle
+    const fullscreenCoverNoRoundToggle = document.getElementById('fullscreen-cover-no-round-toggle');
+    if (fullscreenCoverNoRoundToggle) {
+        fullscreenCoverNoRoundToggle.checked = fullscreenCoverNoRoundSettings.isEnabled();
+        fullscreenCoverNoRoundToggle.addEventListener('change', (e) => {
+            fullscreenCoverNoRoundSettings.setEnabled(e.target.checked);
+            window.dispatchEvent(new CustomEvent('fullscreen-cover-settings-changed'));
+        });
+    }
+
+    // Fullscreen Cover Vanilla Tilt Toggle
+    const fullscreenCoverVanillaTiltToggle = document.getElementById('fullscreen-cover-vanilla-tilt-toggle');
+    if (fullscreenCoverVanillaTiltToggle) {
+        fullscreenCoverVanillaTiltToggle.checked = fullscreenCoverVanillaTiltSettings.isEnabled();
+        fullscreenCoverVanillaTiltToggle.addEventListener('change', (e) => {
+            fullscreenCoverVanillaTiltSettings.setEnabled(e.target.checked);
+            window.dispatchEvent(new CustomEvent('fullscreen-cover-settings-changed'));
+        });
+    }
+
+    // Fullscreen Cover Tilt Distance
+    const fullscreenCoverTiltDistanceSlider = document.getElementById('fullscreen-cover-tilt-distance');
+    if (fullscreenCoverTiltDistanceSlider) {
+        fullscreenCoverTiltDistanceSlider.value = fullscreenCoverTiltDistanceSettings.getValue();
+        fullscreenCoverTiltDistanceSlider.addEventListener('input', (e) => {
+            fullscreenCoverTiltDistanceSettings.setValue(parseInt(e.target.value));
+            window.dispatchEvent(new CustomEvent('fullscreen-cover-settings-changed'));
+        });
+    }
+
+    // Fullscreen Cover Tilt Speed
+    const fullscreenCoverTiltSpeedSlider = document.getElementById('fullscreen-cover-tilt-speed');
+    if (fullscreenCoverTiltSpeedSlider) {
+        fullscreenCoverTiltSpeedSlider.value = fullscreenCoverTiltSpeedSettings.getValue();
+        fullscreenCoverTiltSpeedSlider.addEventListener('input', (e) => {
+            fullscreenCoverTiltSpeedSettings.setValue(parseInt(e.target.value));
+            window.dispatchEvent(new CustomEvent('fullscreen-cover-settings-changed'));
+        });
+    }
+
     // Waveform Toggle
     const waveformToggle = document.getElementById('waveform-toggle');
     if (waveformToggle) {
@@ -4914,6 +4958,34 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         shuffleEditorsPicksToggle.checked = homePageSettings.shouldShuffleEditorsPicks();
         shuffleEditorsPicksToggle.addEventListener('change', (e) => {
             homePageSettings.setShuffleEditorsPicks(e.target.checked);
+        });
+    }
+
+    const editorsPicksSourceSelect = document.getElementById('editors-picks-source-select');
+    if (editorsPicksSourceSelect) {
+        async function populateEditorsPicksSource() {
+            try {
+                const response = await fetch('/editors-picks-old/index.json');
+                if (response.ok) {
+                    const oldPicks = await response.json();
+                    oldPicks.forEach((pick) => {
+                        const option = document.createElement('option');
+                        option.value = pick.file;
+                        option.textContent = pick.label;
+                        editorsPicksSourceSelect.appendChild(option);
+                    });
+                }
+            } catch (e) {
+                console.warn('Could not load editors-picks-old index:', e);
+            }
+            const currentSource = homePageSettings.getEditorsPicksSource();
+            editorsPicksSourceSelect.value = currentSource;
+        }
+        populateEditorsPicksSource();
+
+        editorsPicksSourceSelect.addEventListener('change', (e) => {
+            homePageSettings.setEditorsPicksSource(e.target.value);
+            window.dispatchEvent(new CustomEvent('refresh-home-editors-picks'));
         });
     }
 

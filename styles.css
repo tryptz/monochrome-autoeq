@@ -2950,6 +2950,30 @@ body.multi-select-mode .track-item:hover {
     width: 100px;
 }
 
+.setting-item input[type='range'] {
+    width: 120px;
+    accent-color: var(--accent);
+    appearance: none;
+    height: 6px;
+    background: var(--border);
+    border-radius: var(--radius-full);
+    outline: none;
+}
+
+.setting-item input[type='range']::-webkit-slider-thumb {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--primary);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+
+.setting-item input[type='range']::-webkit-slider-thumb:hover {
+    background: var(--highlight);
+}
+
 .playback-speed-control {
     display: flex;
     align-items: center;
@@ -3847,7 +3871,6 @@ input:checked + .slider::before {
 /* Blocked content styling */
 .track-item.blocked {
     opacity: 0.4;
-    pointer-events: none;
     filter: grayscale(100%);
 }
 
@@ -3855,20 +3878,9 @@ input:checked + .slider::before {
     text-decoration: line-through;
 }
 
-.track-item.blocked .track-menu-btn {
-    pointer-events: auto;
-    opacity: 1;
-}
-
 .card.blocked {
     opacity: 0.4;
-    pointer-events: none;
     filter: grayscale(100%);
-}
-
-.card.blocked .card-menu-btn {
-    pointer-events: auto;
-    opacity: 1;
 }
 
 .card.blocked .card-title,
@@ -4092,6 +4104,10 @@ input:checked + .slider::before {
     object-fit: contain;
     margin-bottom: 1rem;
     z-index: 1;
+}
+
+#fullscreen-cover-overlay.fullscreen-cover-no-round #fullscreen-cover-image {
+    border-radius: 0;
 }
 
 /* Enhanced drop shadow for album cover in visualizer mode */
