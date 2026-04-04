@@ -469,18 +469,78 @@ class AudioContextManager {
             }
 
             // --- 2. Tear down stale connections ---
-            try { this.source.disconnect(); } catch { /* */ }
-            if (this.monoGainNode) { try { this.monoGainNode.disconnect(); } catch { /* */ } }
-            if (this.monoMergerNode) { try { this.monoMergerNode.disconnect(); } catch { /* */ } }
-            if (this.preampNode) { try { this.preampNode.disconnect(); } catch { /* */ } }
-            this.filters.forEach((f) => { try { f.disconnect(); } catch { /* */ } });
-            try { this.outputNode.disconnect(); } catch { /* */ }
+            try {
+                this.source.disconnect();
+            } catch {
+                /* */
+            }
+            if (this.monoGainNode) {
+                try {
+                    this.monoGainNode.disconnect();
+                } catch {
+                    /* */
+                }
+            }
+            if (this.monoMergerNode) {
+                try {
+                    this.monoMergerNode.disconnect();
+                } catch {
+                    /* */
+                }
+            }
+            if (this.preampNode) {
+                try {
+                    this.preampNode.disconnect();
+                } catch {
+                    /* */
+                }
+            }
+            this.filters.forEach((f) => {
+                try {
+                    f.disconnect();
+                } catch {
+                    /* */
+                }
+            });
+            try {
+                this.outputNode.disconnect();
+            } catch {
+                /* */
+            }
             // Graphic EQ teardown
-            if (this.geqPreampNode) { try { this.geqPreampNode.disconnect(); } catch { /* */ } }
-            this.geqFilters.forEach((f) => { try { f.disconnect(); } catch { /* */ } });
-            if (this.geqOutputNode) { try { this.geqOutputNode.disconnect(); } catch { /* */ } }
-            try { this.analyser.disconnect(); } catch { /* */ }
-            if (this.volumeNode) { try { this.volumeNode.disconnect(); } catch { /* */ } }
+            if (this.geqPreampNode) {
+                try {
+                    this.geqPreampNode.disconnect();
+                } catch {
+                    /* */
+                }
+            }
+            this.geqFilters.forEach((f) => {
+                try {
+                    f.disconnect();
+                } catch {
+                    /* */
+                }
+            });
+            if (this.geqOutputNode) {
+                try {
+                    this.geqOutputNode.disconnect();
+                } catch {
+                    /* */
+                }
+            }
+            try {
+                this.analyser.disconnect();
+            } catch {
+                /* */
+            }
+            if (this.volumeNode) {
+                try {
+                    this.volumeNode.disconnect();
+                } catch {
+                    /* */
+                }
+            }
 
             // --- 3. Reconnect the final graph (clean, no duplicates) ---
             lastNode = this.source;
@@ -1030,10 +1090,30 @@ class AudioContextManager {
     }
 
     _destroyGraphicEQ() {
-        this.geqFilters.forEach((f) => { try { f.disconnect(); } catch { /* */ } });
+        this.geqFilters.forEach((f) => {
+            try {
+                f.disconnect();
+            } catch {
+                /* */
+            }
+        });
         this.geqFilters = [];
-        if (this.geqPreampNode) { try { this.geqPreampNode.disconnect(); } catch { /* */ } this.geqPreampNode = null; }
-        if (this.geqOutputNode) { try { this.geqOutputNode.disconnect(); } catch { /* */ } this.geqOutputNode = null; }
+        if (this.geqPreampNode) {
+            try {
+                this.geqPreampNode.disconnect();
+            } catch {
+                /* */
+            }
+            this.geqPreampNode = null;
+        }
+        if (this.geqOutputNode) {
+            try {
+                this.geqOutputNode.disconnect();
+            } catch {
+                /* */
+            }
+            this.geqOutputNode = null;
+        }
     }
 
     toggleGraphicEQ(enabled) {

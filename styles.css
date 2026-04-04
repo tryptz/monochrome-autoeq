@@ -7852,13 +7852,16 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
     .graphic-eq-bands {
         min-height: 180px;
     }
+
     .graphic-eq-band-slider-wrap {
         height: 130px;
         width: 22px;
     }
+
     .graphic-eq-band-label {
         font-size: 0.5rem;
     }
+
     .graphic-eq-band-value {
         font-size: 0.5rem;
     }

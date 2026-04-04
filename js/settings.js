@@ -1235,8 +1235,27 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     // 16-Band Graphic Equalizer
     // ========================================
     {
-        const GEQ_FREQUENCIES = [25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000, 20000];
-        const GEQ_LABELS = ['25', '40', '63', '100', '160', '250', '400', '630', '1K', '1.6K', '2.5K', '4K', '6.3K', '10K', '16K', '20K'];
+        const GEQ_FREQUENCIES = [
+            25, 40, 63, 100, 160, 250, 400, 630, 1000, 1600, 2500, 4000, 6300, 10000, 16000, 20000,
+        ];
+        const GEQ_LABELS = [
+            '25',
+            '40',
+            '63',
+            '100',
+            '160',
+            '250',
+            '400',
+            '630',
+            '1K',
+            '1.6K',
+            '2.5K',
+            '4K',
+            '6.3K',
+            '10K',
+            '16K',
+            '20K',
+        ];
         const geqToggle = document.getElementById('graphic-eq-enabled-toggle');
         const geqContainer = document.getElementById('graphic-eq-container');
         const geqBandsContainer = document.getElementById('graphic-eq-bands');
@@ -2002,7 +2021,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     const bands = getActiveBands();
                     if (bands && bands[nodeIdx]) {
                         const rect = autoeqCanvas.getBoundingClientRect();
-                        const padLeft = 40, padRight = 10, padTop = 10, padBottom = 30;
+                        const padLeft = 40,
+                            padRight = 10,
+                            padTop = 10,
+                            padBottom = 30;
                         const w = rect.width - padLeft - padRight;
                         const h = rect.height - padTop - padBottom;
                         const isParam = currentMode === 'parametric';
@@ -2245,7 +2267,10 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                     if (touchNodeIdx >= 0) {
                         const bands = getActiveBands();
                         if (bands && bands[touchNodeIdx]) {
-                            const padLeft = 40, padRight = 10, padTop = 10, padBottom = 30;
+                            const padLeft = 40,
+                                padRight = 10,
+                                padTop = 10,
+                                padBottom = 30;
                             const w = rect.width - padLeft - padRight;
                             const h = rect.height - padTop - padBottom;
                             const isParam = currentMode === 'parametric';
