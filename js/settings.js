@@ -2511,6 +2511,18 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         });
     }
 
+    // Database section collapse
+    const autoeqDatabaseToggle = document.getElementById('autoeq-database-toggle');
+    const autoeqDatabaseCollapse = document.getElementById('autoeq-database-collapse');
+    const autoeqDatabaseBody = document.getElementById('autoeq-database-body');
+    if (autoeqDatabaseToggle) {
+        autoeqDatabaseToggle.addEventListener('click', () => {
+            if (autoeqDatabaseCollapse) autoeqDatabaseCollapse.classList.toggle('collapsed');
+            if (autoeqDatabaseBody)
+                autoeqDatabaseBody.style.display = autoeqDatabaseBody.style.display === 'none' ? '' : 'none';
+        });
+    }
+
     // ========================================
     // Set Status Message
     // ========================================
