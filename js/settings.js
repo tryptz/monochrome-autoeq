@@ -1234,7 +1234,24 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     // ========================================
     // 16-Band Graphic Equalizer (Legacy EQ mode)
     // ========================================
-    const GEQ_LABELS = ['25', '40', '63', '100', '160', '250', '400', '630', '1K', '1.6K', '2.5K', '4K', '6.3K', '10K', '16K', '20K'];
+    const GEQ_LABELS = [
+        '25',
+        '40',
+        '63',
+        '100',
+        '160',
+        '250',
+        '400',
+        '630',
+        '1K',
+        '1.6K',
+        '2.5K',
+        '4K',
+        '6.3K',
+        '10K',
+        '16K',
+        '20K',
+    ];
     const geqBandsContainer = document.getElementById('graphic-eq-bands');
     const geqPreampSlider = document.getElementById('graphic-eq-preamp-slider');
     const geqPreampValue = document.getElementById('graphic-eq-preamp-value');
