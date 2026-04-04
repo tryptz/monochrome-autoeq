@@ -20,6 +20,7 @@ import { db } from './db.js';
 import { modernSettings } from './ModernSettings.js';
 import { SVG_CLOSE } from './icons.ts';
 import { LyricsManager } from './lyrics.js';
+import { MusicAPI } from './music-api.js';
 
 const downloadTasks = new Map();
 const bulkDownloadTasks = new Map();
@@ -1012,11 +1013,41 @@ function completeBulkDownload(notifEl, success = true, message = null) {
     }
 }
 
-export async function downloadTrackWithMetadata(track, quality, api, lyricsManager = null, abortController = null) {
+/**
+ * Downloads a track with metadata and optionally lyrics.
+ * @async
+ * @param {Object} track - The track object to download
+ * @param {string} quality - The desired audio quality for download
+ * @param {MusicAPI | LosslessAPI} [api=MusicAPI.instance] - The API instance to use for downloading
+ * @param {Object} [lyricsManager=null] - Optional manager for fetching and processing lyrics
+ * @param {AbortController} [abortController=null] - Optional abort controller for cancelling the download
+ * @returns {Promise<void>}
+ * @throws {Error} If the download fails (except for AbortError)
+ * @description
+ * This function:
+ * - Validates that a track is provided
+ * - Prevents duplicate downloads of the same track
+ * - Enriches track metadata via the API
+ * - Downloads the audio blob with progress tracking
+ * - Organizes the file into subfolders based on the folder template
+ * - Optionally downloads and saves lyrics in LRC format
+ * - Updates the local media folder cache if using LocalMedia download method
+ * - Handles errors gracefully and updates download task status
+ */
+export async function downloadTrackWithMetadata(
+    track,
+    quality,
+    api = MusicAPI.instance,
+    lyricsManager = null,
+    abortController = null
+) {
     if (!track) {
         alert('No track is currently playing');
         return;
     }
+
+    /** @type {LosslessAPI} */
+    const tidalAPI = api.tidalAPI || api;
 
     const downloadKey = `track-${track.id}`;
     if (ongoingDownloads.has(downloadKey)) {
@@ -1024,7 +1055,7 @@ export async function downloadTrackWithMetadata(track, quality, api, lyricsManag
         return;
     }
 
-    const { enrichedTrack } = await api.tidalAPI.enrichTrack(track, { downloadQuality: quality });
+    const { enrichedTrack } = await tidalAPI.enrichTrack(track, { downloadQuality: quality });
     const filename = buildTrackFilename(enrichedTrack, quality);
 
     const controller = abortController || new AbortController();

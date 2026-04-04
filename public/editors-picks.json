@@ -190,5 +190,69 @@
         "mediaMetadata": {
             "tags": ["LOSSLESS"]
         }
+    },
+    {
+        "type": "album",
+        "id": 250986538,
+        "title": "Revolutionary, Vol. 1 (Bonus Edition)",
+        "artist": {
+            "id": 3604583,
+            "name": "Immortal Technique"
+        },
+        "releaseDate": "2001-09-14",
+        "cover": "e510dd6d-dcdf-4272-9c68-f4580f2fbd14",
+        "explicit": true,
+        "audioQuality": "LOSSLESS",
+        "mediaMetadata": {
+            "tags": ["LOSSLESS"]
+        }
+    },
+    {
+        "type": "album",
+        "id": 509761344,
+        "title": "EMOTIONS",
+        "artist": {
+            "id": 49124576,
+            "name": "Nine Vicious"
+        },
+        "releaseDate": "2026-04-03",
+        "cover": "f29b18d3-b19f-45b1-968a-0ad360647130",
+        "explicit": true,
+        "audioQuality": "LOSSLESS",
+        "mediaMetadata": {
+            "tags": ["LOSSLESS"]
+        }
+    },
+    {
+        "type": "album",
+        "id": 15621057,
+        "title": "Triple F Life: Friends, Fans & Family (Deluxe Version)",
+        "artist": {
+            "id": 3654061,
+            "name": "Waka Flocka Flame"
+        },
+        "releaseDate": "2012-06-12",
+        "cover": "3199b7de-5e3d-486c-acf1-870ff4c60572",
+        "explicit": true,
+        "audioQuality": "LOSSLESS",
+        "mediaMetadata": {
+            "tags": ["LOSSLESS"]
+        }
+    },
+    {
+        "type": "album",
+        "id": 103897783,
+        "title": "Freewave 3",
+        "artist": {
+            "id": 7923685,
+            "name": "Lucki"
+        },
+        "releaseDate": "2019-02-15",
+        "cover": "1d481a33-8b20-4ee3-b04b-5ac6e0fc5e78",
+        "explicit": true,
+        "audioQuality": "LOSSLESS",
+        "mediaMetadata": {
+            "tags": ["LOSSLESS"]
+        }
     }
 ]
