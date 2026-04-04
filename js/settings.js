@@ -1258,12 +1258,35 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const geqPresetSelect = document.getElementById('graphic-eq-preset-select');
     const geqResetBtn = document.getElementById('graphic-eq-reset-btn');
 
+    const legacyGeqBandsContainer = document.getElementById('legacy-graphic-eq-bands');
+    const legacyGeqPreampSlider = document.getElementById('legacy-graphic-eq-preamp-slider');
+    const legacyGeqPreampValue = document.getElementById('legacy-graphic-eq-preamp-value');
+    const legacyGeqPresetSelect = document.getElementById('legacy-graphic-eq-preset-select');
+    const legacyGeqResetBtn = document.getElementById('legacy-graphic-eq-reset-btn');
+
+    const geqPreampSliders = [geqPreampSlider, legacyGeqPreampSlider].filter(Boolean);
+    const geqPreampValues = [geqPreampValue, legacyGeqPreampValue].filter(Boolean);
+    const geqPresetSelects = [geqPresetSelect, legacyGeqPresetSelect].filter(Boolean);
+
     let geqGains = equalizerSettings.getGraphicEqGains() || new Array(16).fill(0);
     let geqPreamp = equalizerSettings.getGraphicEqPreamp() || 0;
     const geqRange = equalizerSettings.getRange();
 
-    // Build 16 vertical slider bands
-    if (geqBandsContainer) {
+    // Sync all slider UIs across both containers
+    const geqSyncAllSliders = () => {
+        geqGains.forEach((g, i) => {
+            ['geq', 'legacy-geq'].forEach((prefix) => {
+                const sl = document.getElementById(`${prefix}-slider-${i}`);
+                const vl = document.getElementById(`${prefix}-value-${i}`);
+                if (sl) sl.value = g;
+                if (vl) vl.textContent = `${g > 0 ? '+' : ''}${g.toFixed(1)}`;
+            });
+        });
+    };
+
+    // Build 16 vertical slider bands into a container
+    const buildGeqBands = (container, idPrefix) => {
+        if (!container) return;
         GEQ_LABELS.forEach((_label, i) => {
             const band = document.createElement('div');
             band.className = 'graphic-eq-band';
@@ -1271,7 +1294,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             const valueLabel = document.createElement('span');
             valueLabel.className = 'graphic-eq-band-value';
             valueLabel.textContent = `${geqGains[i] > 0 ? '+' : ''}${geqGains[i].toFixed(1)}`;
-            valueLabel.id = `geq-value-${i}`;
+            valueLabel.id = `${idPrefix}-value-${i}`;
 
             const sliderWrap = document.createElement('div');
             sliderWrap.className = 'graphic-eq-band-slider-wrap';
@@ -1282,16 +1305,16 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             slider.max = geqRange.max;
             slider.step = '0.1';
             slider.value = geqGains[i];
-            slider.id = `geq-slider-${i}`;
+            slider.id = `${idPrefix}-slider-${i}`;
             slider.setAttribute('aria-label', `${GEQ_LABELS[i]} Hz`);
 
             slider.addEventListener('input', () => {
                 const gain = parseFloat(slider.value);
                 geqGains[i] = gain;
-                valueLabel.textContent = `${gain > 0 ? '+' : ''}${gain.toFixed(1)}`;
                 equalizerSettings.setGraphicEqGains(geqGains);
                 audioContextManager.setGraphicEqBandGain(i, gain);
-                if (geqPresetSelect) geqPresetSelect.value = '';
+                geqSyncAllSliders();
+                geqPresetSelects.forEach((s) => (s.value = ''));
             });
 
             sliderWrap.appendChild(slider);
@@ -1303,24 +1326,33 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             band.appendChild(valueLabel);
             band.appendChild(sliderWrap);
             band.appendChild(freqLabel);
-            geqBandsContainer.appendChild(band);
+            container.appendChild(band);
         });
-    }
+    };
 
-    if (geqPreampSlider) {
-        geqPreampSlider.value = geqPreamp;
-        if (geqPreampValue) geqPreampValue.textContent = `${geqPreamp} dB`;
-        geqPreampSlider.addEventListener('input', () => {
-            geqPreamp = parseFloat(geqPreampSlider.value);
-            if (geqPreampValue) geqPreampValue.textContent = `${geqPreamp.toFixed(1)} dB`;
+    buildGeqBands(geqBandsContainer, 'geq');
+    buildGeqBands(legacyGeqBandsContainer, 'legacy-geq');
+
+    // Wire up preamp sliders
+    geqPreampSliders.forEach((slider) => {
+        slider.value = geqPreamp;
+        slider.addEventListener('input', () => {
+            geqPreamp = parseFloat(slider.value);
+            const text = `${geqPreamp.toFixed(1)} dB`;
+            geqPreampValues.forEach((v) => (v.textContent = text));
+            geqPreampSliders.forEach((s) => {
+                if (s !== slider) s.value = geqPreamp;
+            });
             equalizerSettings.setGraphicEqPreamp(geqPreamp);
             audioContextManager.setGraphicEqPreamp(geqPreamp);
         });
-    }
+    });
+    geqPreampValues.forEach((v) => (v.textContent = `${geqPreamp} dB`));
 
-    if (geqPresetSelect) {
-        geqPresetSelect.addEventListener('change', () => {
-            const key = geqPresetSelect.value;
+    // Wire up preset selects
+    geqPresetSelects.forEach((select) => {
+        select.addEventListener('change', () => {
+            const key = select.value;
             if (!key) return;
             const presets = getPresetsForBandCount(16);
             const preset = presets[key];
@@ -1328,29 +1360,23 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             geqGains = [...preset.gains];
             equalizerSettings.setGraphicEqGains(geqGains);
             audioContextManager.setGraphicEqAllGains(geqGains);
-            geqGains.forEach((g, i) => {
-                const sl = document.getElementById(`geq-slider-${i}`);
-                const vl = document.getElementById(`geq-value-${i}`);
-                if (sl) sl.value = g;
-                if (vl) vl.textContent = `${g > 0 ? '+' : ''}${g.toFixed(1)}`;
+            geqSyncAllSliders();
+            geqPresetSelects.forEach((s) => {
+                if (s !== select) s.value = key;
             });
         });
-    }
+    });
 
-    if (geqResetBtn) {
-        geqResetBtn.addEventListener('click', () => {
+    // Wire up reset buttons
+    [geqResetBtn, legacyGeqResetBtn].filter(Boolean).forEach((btn) => {
+        btn.addEventListener('click', () => {
             geqGains = new Array(16).fill(0);
             equalizerSettings.setGraphicEqGains(geqGains);
             audioContextManager.setGraphicEqAllGains(geqGains);
-            geqGains.forEach((_g, i) => {
-                const sl = document.getElementById(`geq-slider-${i}`);
-                const vl = document.getElementById(`geq-value-${i}`);
-                if (sl) sl.value = 0;
-                if (vl) vl.textContent = '0.0';
-            });
-            if (geqPresetSelect) geqPresetSelect.value = 'flat';
+            geqSyncAllSliders();
+            geqPresetSelects.forEach((s) => (s.value = 'flat'));
         });
-    }
+    });
 
     // ========================================
     // Precision AutoEQ - Redesigned Equalizer
