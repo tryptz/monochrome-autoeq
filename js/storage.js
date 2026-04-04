@@ -1697,6 +1697,65 @@ export const equalizerSettings = {
     clearLastHeadphone() {
         localStorage.removeItem(this.AUTOEQ_LAST_HEADPHONE_KEY);
     },
+
+    // --- Graphic EQ (16-band) separate storage ---
+    GEQ_ENABLED_KEY: 'graphic-eq-enabled',
+    GEQ_GAINS_KEY: 'graphic-eq-gains',
+    GEQ_PREAMP_KEY: 'graphic-eq-preamp',
+
+    isGraphicEqEnabled() {
+        try {
+            return localStorage.getItem(this.GEQ_ENABLED_KEY) === 'true';
+        } catch {
+            return false;
+        }
+    },
+
+    setGraphicEqEnabled(enabled) {
+        try {
+            localStorage.setItem(this.GEQ_ENABLED_KEY, String(!!enabled));
+        } catch {
+            /* ignore */
+        }
+    },
+
+    getGraphicEqGains() {
+        try {
+            const stored = localStorage.getItem(this.GEQ_GAINS_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length === 16) return parsed;
+            }
+        } catch {
+            /* ignore */
+        }
+        return new Array(16).fill(0);
+    },
+
+    setGraphicEqGains(gains) {
+        try {
+            localStorage.setItem(this.GEQ_GAINS_KEY, JSON.stringify(gains));
+        } catch {
+            /* ignore */
+        }
+    },
+
+    getGraphicEqPreamp() {
+        try {
+            const val = localStorage.getItem(this.GEQ_PREAMP_KEY);
+            return val !== null ? parseFloat(val) : 0;
+        } catch {
+            return 0;
+        }
+    },
+
+    setGraphicEqPreamp(db) {
+        try {
+            localStorage.setItem(this.GEQ_PREAMP_KEY, String(db));
+        } catch {
+            /* ignore */
+        }
+    },
 };
 
 export const monoAudioSettings = {
@@ -2653,18 +2712,18 @@ export const fontSettings = {
         document.documentElement.style.setProperty('--font-family', "'SF Pro Display', sans-serif");
     },
 
-    applyFont() {
+    async applyFont() {
         const config = this.getConfig();
 
         switch (config.type) {
             case 'google':
-                this.loadGoogleFont(config.family);
+                await this.loadGoogleFont(config.family);
                 break;
             case 'url':
-                this.loadFontFromUrl(config.url, config.family);
+                await this.loadFontFromUrl(config.url, config.family);
                 break;
             case 'uploaded':
-                this.loadUploadedFont(config.fontId);
+                await this.loadUploadedFont(config.fontId);
                 break;
             case 'preset':
             default:
