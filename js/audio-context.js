@@ -438,7 +438,11 @@ class AudioContextManager {
 
             // --- 1. Disconnect all existing connections ---
             const safeDisconnect = (node) => {
-                try { node?.disconnect(); } catch { /* */ }
+                try {
+                    node?.disconnect();
+                } catch {
+                    /* */
+                }
             };
             safeDisconnect(this.source);
             safeDisconnect(this.monoGainNode);
