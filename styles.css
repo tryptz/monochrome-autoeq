@@ -1763,6 +1763,10 @@ input[type='search']::-webkit-search-cancel-button {
 
 .settings-tab-content {
     display: none;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: visible;
 }
 
 .settings-tab-content.active {
@@ -4359,6 +4363,7 @@ input:checked + .slider::before {
     justify-content: center;
     gap: 1rem;
     margin-top: 1rem;
+    position: relative;
 }
 
 .fs-volume-btn {
