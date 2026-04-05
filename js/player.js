@@ -541,7 +541,7 @@ export class Player {
                                 albumPeakAmplitude: trackData.info.albumPeakAmplitude,
                             };
                         }
-                    } catch(e) {} // Fail silently
+                    } catch(_e) {} // Fail silently
                 }
 
                 this.preloadCache.set(track.id, streamInfo);
@@ -569,11 +569,11 @@ export class Player {
                                         if (activeVariant && activeVariant.audioCodec) {
                                             preloadConfig.preferredAudioCodecs = [activeVariant.audioCodec];
                                         }
-                                    } catch (e) {}
+                                    } catch (_e) {}
                                 }
                                 const preloadManager = await this.shakaPlayer.preload(streamUrl, null, null, preloadConfig);
                                 streamInfo.preloadManager = preloadManager;
-                            } catch (e) {
+                            } catch (_e) {
                                 // Ignore preload errors, will just load fresh
                             }
                         } else {
