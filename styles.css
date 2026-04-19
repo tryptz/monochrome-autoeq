@@ -9684,7 +9684,7 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
     }
 
     .eq-spectrum-range {
-        top: 44px;
+        display: none;
     }
 
     .autoeq-controls-row {
