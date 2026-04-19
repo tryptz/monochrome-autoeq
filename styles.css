@@ -8348,12 +8348,6 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
     z-index: 2;
 }
 
-@media (max-width: 768px) {
-    .eq-spectrum-range {
-        display: none;
-    }
-}
-
 .eq-spectrum-knob {
     cursor: ns-resize;
     touch-action: none;
@@ -9671,6 +9665,26 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
 
     .autoeq-graph-wrapper {
         height: 220px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .autoeq-graph-wrapper .autoeq-response-canvas {
+        flex: 1;
+        height: auto;
+        min-height: 0;
+    }
+
+    .eq-spectrum-controls {
+        position: static;
+        order: -1;
+        padding: 6px 8px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+
+    .eq-spectrum-range {
+        top: 44px;
     }
 
     .autoeq-controls-row {
