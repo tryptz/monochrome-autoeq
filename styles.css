@@ -8348,6 +8348,12 @@ body:has(#side-panel.active) #close-fullscreen-cover-btn {
     z-index: 2;
 }
 
+@media (max-width: 768px) {
+    .eq-spectrum-range {
+        display: none;
+    }
+}
+
 .eq-spectrum-knob {
     cursor: ns-resize;
     touch-action: none;
